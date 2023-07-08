@@ -2,7 +2,7 @@ Website to use this (always most up to date option):
 https://chuckz1.github.io/Irrigation-Timer/
 
 How to get wifi to work:
-1. Download the single html file from the folder "Front End/Single File/index.html"
+1. Download the single html file from the folder "Single File/index.html"
 	- make sure the version is the same as displayed on the website link (if not, yell me me for not updating the file)
 2. Find the index.html file in your device
 3. Run the file with a browser
