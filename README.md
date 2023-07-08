@@ -1,5 +1,7 @@
+# Irrigation Pivot Timer
+
 Website to use this (always most up to date option):
-https://chuckz1.github.io/Irrigation-Timer/
+https://chuckz1.github.io/Irrigation-Timer-UI/
 
 How to get wifi to work:
 1. Download the single html file from the folder "Front End/Single File/index.html"
