@@ -209,7 +209,7 @@
 
 <body>
 
-	<h1 id="versionNumber">Version: 1.02</h1>
+	<h1 id="versionNumber">Version: 1.04</h1>
 
 	<div id="globalInfo">
 		<p id="connectionStatus" class="invalid">Connection Status: Not Connected</p>
@@ -273,15 +273,15 @@
 			<hr>
 		</div>
 
-		<div id="testing" class="hidden">
-			<button type="button" class="collapsible">Testing Tools (Serial Only)</button>
+		<div id="testing" class="">
+			<button type="button" class="collapsible">Testing Tools</button>
 			<div id="testingContent">
 				<p><b>This menu allows you to test times to ensure the settings are correct. Relays will not be affected
 						when in testing mode. A blue light on the brain (not the gps) will turn on if testing mode in
 						enabled</b>
 				</p>
 				<p>This will disable relay changes and allow you to test specific times</p>
-				<button onclick="toggleTestingModeClick()">Toggle Testing Mode</button><br>
+				<button onclick="toggleTestingModeClick()">Toggle Testing Mode (Serial Connection Only)</button><br>
 				<div id="gpsTimeDisplayContainer">
 					<p>Time reported by the gps when last refreshed:</p>
 					<p id="gpsTimeDisplay" class="dashedbox"></p>
