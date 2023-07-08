@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Irrigation Timer</title>
+
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+	<h1 id="versionNumber">Version: 1.03</h1>
+
+	<div id="globalInfo">
+		<p id="connectionStatus" class="invalid">Connection Status: Not Connected</p>
+		<p id="sendingStatus">Send/Receiving in progress</p>
+		<p id="dataStatus">Unsaved Changes</p>
+		<button id="refreshButton" onclick="refreshDataClick()">Refresh Data</button>
+		<button id="applyButton" onclick="applyChangesClick()">Apply Changes</button><br>
+		<br>
+		<span>Error Log: </span>
+		<button onclick="clearErrorLogClick()">Clear log</button>
+		<pre id="errorLog"></pre>
+	</div>
+
+	<div id="listContainer" class="listWidth">
+
+		<div id="connectionOptions">
+			<button type="button" class="collapsible">Conection Options</button>
+			<div id="connectionOptionsContent">
+				<div id="serialControls">
+					<h3>Serial (USB) port</h3>
+					<p><b>Notice:</b></p>
+					<p>
+						This only works with google chrome and microsoft edge
+					</p>
+
+					<div hidden>
+						<label for="baudSelect">Baud Rate:</label>
+						<select id="baudSelect" onchange="setBaudRate()">
+							<option value="300">300</option>
+							<option value="1200">1200</option>
+							<option value="2400">2400</option>
+							<option value="4800">4800</option>
+							<option value="9600">9600</option>
+							<option value="19200">19200</option>
+							<option value="38400">38400</option>
+							<option value="57600">57600</option>
+							<option value="74800">74800</option>
+							<option value="115200" selected>115200</option>
+							<option value="230400">230400</option>
+							<option value="500000">500000</option>
+							<option value="1000000">1000000</option>
+							<option value="2000000">2000000</option>
+						</select>
+
+						<input id="baudRateField" type="number" value="" />
+					</div>
+					<button id="connect" type="button" onclick="serialConnectBtn()">Connect</button>
+				</div>
+
+				<div id="wifiControls" class="">
+					<h3>Wifi</h3>
+					<p>This will not work without proper installation</p>
+					<p>The html file must be run localy</p>
+					<p>Connect to the broadcasted wifi network (Default Name: Pivot Timer)</p>
+					<button id="wifiConnect" type="button" onclick="wifiConnectClick()">Connect</button>
+				</div>
+
+				<br>
+			</div>
+
+			<hr>
+		</div>
+
+		<div id="testing" class="">
+			<button type="button" class="collapsible">Testing Tools</button>
+			<div id="testingContent">
+				<p><b>This menu allows you to test times to ensure the settings are correct. Relays will not be affected
+						when in testing mode. A blue light on the brain (not the gps) will turn on if testing mode in
+						enabled</b>
+				</p>
+				<p>This will disable relay changes and allow you to test specific times</p>
+				<button onclick="toggleTestingModeClick()">Toggle Testing Mode (Serial Connection Only)</button><br>
+				<div id="gpsTimeDisplayContainer">
+					<p>Time reported by the gps when last refreshed:</p>
+					<p id="gpsTimeDisplay" class="dashedbox"></p>
+				</div>
+
+				<br>
+				<div id="testingModeContent" class="dashedbox" hidden>
+					<div class="unfinished">
+						<p>This will test each time span and holiday to ensure the relays are set to what is expected
+						</p>
+						<button onclick="verifySettings()" hidden>Verify current settings</button><br>
+						<br>
+					</div>
+
+					<p>This will test a specific time</p>
+					<input id="testSingleTimeInput" type="datetime-local"><br>
+					<input id="testProcedureMinInput" type="number" value="0">
+					<label for="testProcedureMinInput">minutes since procedure was triggered</label><br>
+					<button onclick="testSingleTimeClick()">Send Test Time</button><br>
+					<p>Last Test Results:</p>
+					<button id="testPivotOnDisplay">Pivot On</button>
+					<br>
+					<p>Relays:</p>
+					<div id="testRelayDisplayContainer">
+						<button>1</button>
+						<button>2</button>
+						<button>3</button>
+						<button>4</button>
+					</div>
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="generalSettings" class="">
+			<button type="button" class="collapsible">Wifi Settings</button>
+			<div id="settingsContent">
+				<p>Wifi Settings</p>
+				<label for="enableWifiToggle">Enable Wifi</label>
+				<input id="enableWifiToggle" type="checkbox" onchange="enableWifiToggleClick()"><br>
+				<label for="wifiNameInput">Wifi Name</label>
+				<input id="wifiNameInput" type="text" oninput="wifiNameChanged()"><br>
+				<label for="wifiPassInput">Wifi Password</label>
+				<input id="wifiPassInput" type="text" oninput="wifiPassChanged()"><br>
+			</div>
+			<hr>
+		</div>
+
+		<div id="startProcedure">
+			<button type="button" class="collapsible">Start Procedure</button>
+			<div id="startProcedureContent">
+				<h2>Start Procedure</h2>
+				<p>Add cuts to create time spans. They are counted as minutes after the procedure is started. Click the
+					red blocks to toggle relays on for that timespan.</p>
+				<div class="dashedbox">
+					<input id="addStartCutInput" type="number">
+					<label for="addStartCutInput">Minutes</label>
+					<br>
+					<button id="addStartCutButton" onclick="addProcedureCutClick(0)">Add a time cut</button>
+					<span>
+						Max cuts per procedure:
+						<span class="maxProcedureCuts"></span>
+					</span><br>
+					<br>
+					<br>
+					<select id="removeStartCutSelect"></select>
+					<button id="removeStartCutButton" onclick="removeProcedureCutClick(0)">Remove a time cut</button>
+					<br>
+					<p>Pivot On</p>
+					<div id="startRelayContainers">
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+					</div>
+
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="stopProcedure">
+			<button type="button" class="collapsible">Stop Procedure</button>
+			<div id="stopProcedureContent">
+				<h2>Stop Procedure</h2>
+				<p>Add cuts to create time spans. They are counted as minutes after the procedure is started. Click the
+					red blocks to toggle relays on for that timespan.</p>
+				<div class="dashedbox">
+					<input id="addStopCutInput" type="number">
+					<label for="addStopCutInput">Minutes</label>
+					<br>
+					<button id="addStopCutButton" onclick="addProcedureCutClick(1)">Add a time cut</button>
+					<span>
+						Max cuts per procedure:
+						<span class="maxProcedureCuts"></span>
+					</span><br>
+					<br>
+					<br>
+					<select id="removeStopCutSelect"></select>
+					<button id="removeStopCutButton" onclick="removeProcedureCutClick(1)">Remove a time cut</button>
+					<br>
+					<p>Pivot On</p>
+					<div id="stopRelayContainers">
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+					</div>
+
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="timeSlots">
+			<button type="button" class="collapsible">Edit Start/Stop Times</button>
+			<div id="timeSlotsContent">
+				<p>Select a day of the week to edit</p>
+				<select id="weekDaySelect" onchange="refreshTimeSlotUI()" size="2">
+					<option value=0 selected>sun</option>
+					<option value=1>mon</option>
+					<option value=2>tue</option>
+					<option value=3>wed</option>
+					<option value=4>thu</option>
+					<option value=5>fri</option>
+					<option value=6>sat</option>
+				</select>
+				<br>
+				<br>
+				<p>Add cuts to create time spans. Click the red blocks to toggle the pivot on for that timespan.</p>
+				<!-- edit weekday container -->
+				<div class="dashedbox">
+					<h1 id="weekDayTitle">Sunday</h1>
+					<input id="addCutInput" type="time">
+					<button id="addCutButton" onclick="addTimeCutClick()">Add a time cut</button>
+					<span>
+						Max cuts in one day:
+						<span id="displayMaxDayCuts"></span>
+					</span><br>
+					<br>
+					<br>
+					<select id="removeCutSelect"></select>
+					<button id="removeCutButton" onclick="removeTimeCutClick()">Remove a time cut</button>
+					<br>
+					<p>Pivot On</p>
+					<table id="pivotOnContainer" class="relayTable"></table>
+					<br>
+					<P>Copy and paste this day of the week to any other day</P>
+					<button id="copyDayBtn" onclick="copyDayClick()">Copy Day</button>
+					<button id="pasteDayBtn" onclick="pasteDayClick()" disabled>Paste Day</button>
+					<p>
+						<span>Selected day to copy: </span>
+						<span id="selectedDayOutput"></span>
+					</p>
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="holiday">
+			<button id="holidayMenuButton" type="button" class="collapsible">Edit Holidays</button>
+			<div id="holidayContent">
+				<br>
+				<button onclick="addHolidaySlotClick()">Add another holiday</button>
+				<span>
+					Max Holidays
+					<span id="displayMaxHolidays"></span>
+				</span><br>
+				<p>Navigation: <span id="holidaySlotCountInfo"></span></p>
+				<button onclick="changeHolidaySlotClick(-1)"><i class="arrow left"></i></button>
+				<input id="holidaySlotInput" onchange="holidaySlotChange()" type="number" min="1" width="200px"
+					value="1">
+				<button onclick="changeHolidaySlotClick(1)"><i class="arrow right"></i></button><br>
+				<br>
+
+				<div id="individualHolidayContainer" class="dashedbox">
+
+					<button onclick="removeHolidaySlotClick()">Remove Holiday</button><br>
+					<br>
+					<form id="holidayTypeForm" onchange="HolidayTypeSelectChange()">
+						<input id="holidayTypeSelect1" type="radio" name="typeSelect" value="0" checked>
+						<label for="holidayTypeSelect1">Specific Date</label>
+						<input id="holidayTypeSelect2" type="radio" name="typeSelect" value="1">
+						<label for="holidayTypeSelect2">Week of the Month</label>
+					</form>
+					<br>
+					<span>Start Time</span>
+					<input id="holidayStartTimeInput" type="time" onchange="holidayStartTimeChange()">
+					<span>End Time</span>
+					<input id="holidayEndTimeInput" type="time" onchange="holidayEndTimeChange()"><br>
+					<br>
+					<div class="dashedbox">
+						<p>Pivot On</p>
+						<button id="holidayPivotOnButton" class="holidayRelayButton"
+							onclick="holidayRelayToggle()"></button>
+						<div id="holidayRelayContainer">
+
+						</div>
+					</div>
+					<br>
+					<br>
+					<div id="holidaySpecificDateContainer" class="dashedbox">
+						<p><b>Specific Date</b></p>
+						<span>Select a specific date (year is ignored): </span>
+						<input id="holidaySpecificDateInput" type="date" onchange="holidaySpecificDayChange()">
+					</div>
+
+					<div id="holidayWeekOfMonthContainer" class="dashedbox">
+						<p><b>Week of the Month</b></p>
+						<select id="holidayWeekNumInput" onchange="holidayWeekNumChange()">
+							<option value=1>First</option>
+							<option value=2>Second</option>
+							<option value=3>Third</option>
+							<option value=4>Fourth</option>
+							<option value=4>Fifth</option>
+							<option value="-1">Last</option>
+							<option value="-2">Second to last</option>
+							<option value="-3">Third to last</option>
+							<option value="-4">Fourth to last</option>
+							<option value="-5">Fifth to last</option>
+						</select>
+						<select id="holidayWeekDayInput" onchange="holidayWeekDayChange()">
+							<option value=0>Sunday</option>
+							<option value=1>Monday</option>
+							<option value=2>Tuesday</option>
+							<option value=3>Wednesday</option>
+							<option value=4>Thursday</option>
+							<option value=5>Friday</option>
+							<option value=6>Saturday</option>
+						</select>
+						<span>in</span>
+						<select id="holidayMonthInput" onchange="holidayMonthDropdownChange()">
+							<option value=0>January</option>
+							<option value=1>Feburary</option>
+							<option value=2>March</option>
+							<option value=3>April</option>
+							<option value=4>May</option>
+							<option value=5>June</option>
+							<option value=6>July</option>
+							<option value=7>August</option>
+							<option value=8>September</option>
+							<option value=9>October</option>
+							<option value=10>November</option>
+							<option value=11>December</option>
+						</select>
+					</div>
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<p>All times are in 24 hour format</p>
+		<p>This uses the mountain time timezone</p>
+
+	</div>
+
+	<script src="scripts/utils.js" defer></script>
+	<script src="scripts/bitManipulation.js" defer></script>
+	<script src="scripts/connectionCommands.js" defer></script>
+	<script src="scripts/serial.js" defer></script>
+	<script src="scripts/wifi.js" defer></script>
+	<script src="scripts/userInterface.js" defer></script>
+	<script src="scripts/memory.js" defer></script>
+	<script src="scripts/testUI.js" defer></script>
+	<script src="scripts/holidayUI.js" defer></script>
+	<script src="scripts/timeSlotUi.js" defer></script>
+	<script src="scripts/procedureUI.js" defer></script>
+	<script src="scripts/init.js" defer></script>
+
+</body>
+
+</html>

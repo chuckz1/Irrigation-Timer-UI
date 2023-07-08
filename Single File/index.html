@@ -1,0 +1,3356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Irrigation Timer</title>
+
+	<style>/* For version number */
+#versionNumber{
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	z-index: 1;
+}
+
+/* hides an element */
+.hidden {
+	display: none;
+}
+
+.unfinished{
+	display: none;
+}
+
+/* Adds dashed box around element */
+.dashedbox {
+	border-style: dashed;
+	padding: 10px;
+}
+
+/* For collapsible sections */
+.collapsible {
+	cursor: pointer;
+
+	background-color: #eee;
+	color: #444;
+
+	padding: 18px;
+	width: 100%;
+	border: none;
+	text-align: left;
+	outline: none;
+	font-size: 15px;
+}
+
+.collapsible:hover {
+	background-color: #ccc;
+}
+
+.collapsibleContent {
+	max-height: 0;
+	/* overflow: hidden; */
+	overflow-y: hidden;
+	overflow-x: visible;
+	transition: max-height 0.2s ease-out;
+}
+
+.flexContainer {
+	display: flex;
+	align-items: stretch;
+}
+
+.listWidth {
+	width: 50%;
+}
+
+/*Used to show that object is valid*/
+.valid {
+
+	color: white;
+	background-color: green;
+}
+
+/*Used to show that object is not valid*/
+.invalid {
+
+	color: white;
+	background-color: red;
+}
+
+/* Used to show that something is currently testing */
+.testing{
+	color: white;
+	background-color: blue;
+}
+
+#globalInfo {
+	text-align: center;
+	position: fixed;
+	left: 50%;
+	right: 0%;
+
+
+	background-color: #eee;
+	color: #444;
+
+	padding: 18px;
+}
+
+#connectionStatus {
+	padding: 10px;
+}
+
+#dataStatus{
+	padding: 10px;
+}
+
+#sendingStatus{
+	padding: 10px;
+}
+
+#errorLog {
+	position: relative;
+	background-color: rgb(210, 210, 210);
+	overflow: auto;
+	border-style: solid;
+	height: 300px;
+
+	z-index: 1;
+}
+
+
+
+/* For Serial */
+#baudRateField {
+	width: 80px;
+}
+
+/* For week day picker */
+#weekDaySelect {
+	position: relative;
+	width: 100%;
+	height: 44px;
+	border-radius: 100px;
+	outline: none;
+}
+
+#weekDaySelect option {
+	width: 14%;
+	font-size: 1.2em;
+	padding: 10px 0;
+	text-align: center;
+	display: inline-block;
+	cursor: pointer;
+	border: rgb(82, 204, 0) solid 1px;
+	border-radius: 5px;
+	color: rgb(82, 204, 0);
+}
+
+#weekDaySelect option:checked {
+	background-color: blue;
+}
+
+/* For editing a week day */
+
+.relayTable {
+	position: relative;
+	width: 100%;
+	border-collapse: collapse;
+}
+
+
+/* For editing holidays */
+.holidayRelayButton{
+	padding: 0px;
+	width: 24%;
+	height: 30px;
+	cursor: pointer;
+	border: solid;
+	border-color: black;
+	/* border-width: 1px; */
+	
+	/* newRelayButton.style.padding = "0";
+		newRelayButton.style.border = "solid";
+		newRelayButton.style.cursor = "pointer";
+		newRelayButton.style.height = "30px";
+		newRelayButton.style.borderColor = "black";
+		newRelayButton.style.borderWidth = "1px"; */
+}
+
+
+/* For displaying an arrow */
+.arrow {
+	border: solid black;
+	border-width: 0 3px 3px 0;
+	display: inline-block;
+	padding: 3px;
+}
+
+.right {
+	transform: rotate(-45deg);
+	-webkit-transform: rotate(-45deg);
+}
+
+.left {
+	transform: rotate(135deg);
+	-webkit-transform: rotate(135deg);
+}
+
+.up {
+	transform: rotate(-135deg);
+	-webkit-transform: rotate(-135deg);
+}
+
+.down {
+	transform: rotate(45deg);
+	-webkit-transform: rotate(45deg);
+}</style>
+</head>
+
+<body>
+
+	<h1 id="versionNumber">Version: 1.02</h1>
+
+	<div id="globalInfo">
+		<p id="connectionStatus" class="invalid">Connection Status: Not Connected</p>
+		<p id="sendingStatus">Send/Receiving in progress</p>
+		<p id="dataStatus">Unsaved Changes</p>
+		<button id="refreshButton" onclick="refreshDataClick()">Refresh Data</button>
+		<button id="applyButton" onclick="applyChangesClick()">Apply Changes</button><br>
+		<br>
+		<span>Error Log: </span>
+		<button onclick="clearErrorLogClick()">Clear log</button>
+		<pre id="errorLog"></pre>
+	</div>
+
+	<div id="listContainer" class="listWidth">
+
+		<div id="connectionOptions">
+			<button type="button" class="collapsible">Conection Options</button>
+			<div id="connectionOptionsContent">
+				<div id="serialControls">
+					<h3>Serial (USB) port</h3>
+					<p><b>Notice:</b></p>
+					<p>
+						This only works with google chrome and microsoft edge
+					</p>
+
+					<div hidden>
+						<label for="baudSelect">Baud Rate:</label>
+						<select id="baudSelect" onchange="setBaudRate()">
+							<option value="300">300</option>
+							<option value="1200">1200</option>
+							<option value="2400">2400</option>
+							<option value="4800">4800</option>
+							<option value="9600">9600</option>
+							<option value="19200">19200</option>
+							<option value="38400">38400</option>
+							<option value="57600">57600</option>
+							<option value="74800">74800</option>
+							<option value="115200" selected>115200</option>
+							<option value="230400">230400</option>
+							<option value="500000">500000</option>
+							<option value="1000000">1000000</option>
+							<option value="2000000">2000000</option>
+						</select>
+
+						<input id="baudRateField" type="number" value="" />
+					</div>
+					<button id="connect" type="button" onclick="serialConnectBtn()">Connect</button>
+				</div>
+
+				<div id="wifiControls" class="">
+					<h3>Wifi</h3>
+					<p>This will not work without proper installation</p>
+					<p>The html file must be run localy</p>
+					<p>Connect to the broadcasted wifi network (Default Name: Pivot Timer)</p>
+					<button id="wifiConnect" type="button" onclick="wifiConnectClick()">Connect</button>
+				</div>
+
+				<br>
+			</div>
+
+			<hr>
+		</div>
+
+		<div id="testing" class="hidden">
+			<button type="button" class="collapsible">Testing Tools (Serial Only)</button>
+			<div id="testingContent">
+				<p><b>This menu allows you to test times to ensure the settings are correct. Relays will not be affected
+						when in testing mode. A blue light on the brain (not the gps) will turn on if testing mode in
+						enabled</b>
+				</p>
+				<p>This will disable relay changes and allow you to test specific times</p>
+				<button onclick="toggleTestingModeClick()">Toggle Testing Mode</button><br>
+				<div id="gpsTimeDisplayContainer">
+					<p>Time reported by the gps when last refreshed:</p>
+					<p id="gpsTimeDisplay" class="dashedbox"></p>
+				</div>
+
+				<br>
+				<div id="testingModeContent" class="dashedbox" hidden>
+					<div class="unfinished">
+						<p>This will test each time span and holiday to ensure the relays are set to what is expected
+						</p>
+						<button onclick="verifySettings()" hidden>Verify current settings</button><br>
+						<br>
+					</div>
+
+					<p>This will test a specific time</p>
+					<input id="testSingleTimeInput" type="datetime-local"><br>
+					<input id="testProcedureMinInput" type="number" value="0">
+					<label for="testProcedureMinInput">minutes since procedure was triggered</label><br>
+					<button onclick="testSingleTimeClick()">Send Test Time</button><br>
+					<p>Last Test Results:</p>
+					<button id="testPivotOnDisplay">Pivot On</button>
+					<br>
+					<p>Relays:</p>
+					<div id="testRelayDisplayContainer">
+						<button>1</button>
+						<button>2</button>
+						<button>3</button>
+						<button>4</button>
+					</div>
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="generalSettings" class="">
+			<button type="button" class="collapsible">Wifi Settings</button>
+			<div id="settingsContent">
+				<p>Wifi Settings</p>
+				<label for="enableWifiToggle">Enable Wifi</label>
+				<input id="enableWifiToggle" type="checkbox" onchange="enableWifiToggleClick()"><br>
+				<label for="wifiNameInput">Wifi Name</label>
+				<input id="wifiNameInput" type="text" oninput="wifiNameChanged()"><br>
+				<label for="wifiPassInput">Wifi Password</label>
+				<input id="wifiPassInput" type="text" oninput="wifiPassChanged()"><br>
+			</div>
+			<hr>
+		</div>
+
+		<div id="startProcedure">
+			<button type="button" class="collapsible">Start Procedure</button>
+			<div id="startProcedureContent">
+				<h2>Start Procedure</h2>
+				<p>Add cuts to create time spans. They are counted as minutes after the procedure is started. Click the
+					red blocks to toggle relays on for that timespan.</p>
+				<div class="dashedbox">
+					<input id="addStartCutInput" type="number">
+					<label for="addStartCutInput">Minutes</label>
+					<br>
+					<button id="addStartCutButton" onclick="addProcedureCutClick(0)">Add a time cut</button>
+					<span>
+						Max cuts per procedure:
+						<span class="maxProcedureCuts"></span>
+					</span><br>
+					<br>
+					<br>
+					<select id="removeStartCutSelect"></select>
+					<button id="removeStartCutButton" onclick="removeProcedureCutClick(0)">Remove a time cut</button>
+					<br>
+					<p>Pivot On</p>
+					<div id="startRelayContainers">
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+					</div>
+
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="stopProcedure">
+			<button type="button" class="collapsible">Stop Procedure</button>
+			<div id="stopProcedureContent">
+				<h2>Stop Procedure</h2>
+				<p>Add cuts to create time spans. They are counted as minutes after the procedure is started. Click the
+					red blocks to toggle relays on for that timespan.</p>
+				<div class="dashedbox">
+					<input id="addStopCutInput" type="number">
+					<label for="addStopCutInput">Minutes</label>
+					<br>
+					<button id="addStopCutButton" onclick="addProcedureCutClick(1)">Add a time cut</button>
+					<span>
+						Max cuts per procedure:
+						<span class="maxProcedureCuts"></span>
+					</span><br>
+					<br>
+					<br>
+					<select id="removeStopCutSelect"></select>
+					<button id="removeStopCutButton" onclick="removeProcedureCutClick(1)">Remove a time cut</button>
+					<br>
+					<p>Pivot On</p>
+					<div id="stopRelayContainers">
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+						<table class="relayTable"></table>
+					</div>
+
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="timeSlots">
+			<button type="button" class="collapsible">Edit Start/Stop Times</button>
+			<div id="timeSlotsContent">
+				<p>Select a day of the week to edit</p>
+				<select id="weekDaySelect" onchange="refreshTimeSlotUI()" size="2">
+					<option value=0 selected>sun</option>
+					<option value=1>mon</option>
+					<option value=2>tue</option>
+					<option value=3>wed</option>
+					<option value=4>thu</option>
+					<option value=5>fri</option>
+					<option value=6>sat</option>
+				</select>
+				<br>
+				<br>
+				<p>Add cuts to create time spans. Click the red blocks to toggle the pivot on for that timespan.</p>
+				<!-- edit weekday container -->
+				<div class="dashedbox">
+					<h1 id="weekDayTitle">Sunday</h1>
+					<input id="addCutInput" type="time">
+					<button id="addCutButton" onclick="addTimeCutClick()">Add a time cut</button>
+					<span>
+						Max cuts in one day:
+						<span id="displayMaxDayCuts"></span>
+					</span><br>
+					<br>
+					<br>
+					<select id="removeCutSelect"></select>
+					<button id="removeCutButton" onclick="removeTimeCutClick()">Remove a time cut</button>
+					<br>
+					<p>Pivot On</p>
+					<table id="pivotOnContainer" class="relayTable"></table>
+					<br>
+					<P>Copy and paste this day of the week to any other day</P>
+					<button id="copyDayBtn" onclick="copyDayClick()">Copy Day</button>
+					<button id="pasteDayBtn" onclick="pasteDayClick()" disabled>Paste Day</button>
+					<p>
+						<span>Selected day to copy: </span>
+						<span id="selectedDayOutput"></span>
+					</p>
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<div id="holiday">
+			<button id="holidayMenuButton" type="button" class="collapsible">Edit Holidays</button>
+			<div id="holidayContent">
+				<br>
+				<button onclick="addHolidaySlotClick()">Add another holiday</button>
+				<span>
+					Max Holidays
+					<span id="displayMaxHolidays"></span>
+				</span><br>
+				<p>Navigation: <span id="holidaySlotCountInfo"></span></p>
+				<button onclick="changeHolidaySlotClick(-1)"><i class="arrow left"></i></button>
+				<input id="holidaySlotInput" onchange="holidaySlotChange()" type="number" min="1" width="200px"
+					value="1">
+				<button onclick="changeHolidaySlotClick(1)"><i class="arrow right"></i></button><br>
+				<br>
+
+				<div id="individualHolidayContainer" class="dashedbox">
+
+					<button onclick="removeHolidaySlotClick()">Remove Holiday</button><br>
+					<br>
+					<form id="holidayTypeForm" onchange="HolidayTypeSelectChange()">
+						<input id="holidayTypeSelect1" type="radio" name="typeSelect" value="0" checked>
+						<label for="holidayTypeSelect1">Specific Date</label>
+						<input id="holidayTypeSelect2" type="radio" name="typeSelect" value="1">
+						<label for="holidayTypeSelect2">Week of the Month</label>
+					</form>
+					<br>
+					<span>Start Time</span>
+					<input id="holidayStartTimeInput" type="time" onchange="holidayStartTimeChange()">
+					<span>End Time</span>
+					<input id="holidayEndTimeInput" type="time" onchange="holidayEndTimeChange()"><br>
+					<br>
+					<div class="dashedbox">
+						<p>Pivot On</p>
+						<button id="holidayPivotOnButton" class="holidayRelayButton"
+							onclick="holidayRelayToggle()"></button>
+						<div id="holidayRelayContainer">
+
+						</div>
+					</div>
+					<br>
+					<br>
+					<div id="holidaySpecificDateContainer" class="dashedbox">
+						<p><b>Specific Date</b></p>
+						<span>Select a specific date (year is ignored): </span>
+						<input id="holidaySpecificDateInput" type="date" onchange="holidaySpecificDayChange()">
+					</div>
+
+					<div id="holidayWeekOfMonthContainer" class="dashedbox">
+						<p><b>Week of the Month</b></p>
+						<select id="holidayWeekNumInput" onchange="holidayWeekNumChange()">
+							<option value=1>First</option>
+							<option value=2>Second</option>
+							<option value=3>Third</option>
+							<option value=4>Fourth</option>
+							<option value=4>Fifth</option>
+							<option value="-1">Last</option>
+							<option value="-2">Second to last</option>
+							<option value="-3">Third to last</option>
+							<option value="-4">Fourth to last</option>
+							<option value="-5">Fifth to last</option>
+						</select>
+						<select id="holidayWeekDayInput" onchange="holidayWeekDayChange()">
+							<option value=0>Sunday</option>
+							<option value=1>Monday</option>
+							<option value=2>Tuesday</option>
+							<option value=3>Wednesday</option>
+							<option value=4>Thursday</option>
+							<option value=5>Friday</option>
+							<option value=6>Saturday</option>
+						</select>
+						<span>in</span>
+						<select id="holidayMonthInput" onchange="holidayMonthDropdownChange()">
+							<option value=0>January</option>
+							<option value=1>Feburary</option>
+							<option value=2>March</option>
+							<option value=3>April</option>
+							<option value=4>May</option>
+							<option value=5>June</option>
+							<option value=6>July</option>
+							<option value=7>August</option>
+							<option value=8>September</option>
+							<option value=9>October</option>
+							<option value=10>November</option>
+							<option value=11>December</option>
+						</select>
+					</div>
+				</div>
+			</div>
+			<hr>
+		</div>
+
+		<p>All times are in 24 hour format</p>
+		<p>This uses the mountain time timezone</p>
+
+	</div>
+
+	<script>"use strict";
+
+//adds a string format command
+if (!String.format) {
+	String.format = function (format) {
+		var args = Array.prototype.slice.call(arguments, 1);
+		return format.replace(/{(\d+)}/g, function (match, number) {
+			return typeof args[number] != 'undefined'
+				? args[number]
+				: match
+				;
+		});
+	};
+}
+
+//used to sort objects based on properties
+//e.g. People.sort(dynamicSortMultiple("Name", "-Surname"));
+function dynamicSortMultiple() {
+	/*
+	 * save the arguments object as it will be overwritten
+	 * note that arguments object is an array-like object
+	 * consisting of the names of the properties to sort by
+	 */
+	var props = arguments;
+	return function (obj1, obj2) {
+		var i = 0, result = 0, numberOfProperties = props.length;
+		/* try getting a different result from 0 (equal)
+		 * as long as we have extra properties to compare
+		 */
+		while (result === 0 && i < numberOfProperties) {
+			result = dynamicSort(props[i])(obj1, obj2);
+			i++;
+		}
+		return result;
+	}
+}
+
+//async delay method
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function boolArrayToBytes(boolArray = []) {
+	let byteArray = [];
+
+	let counter = 0;
+	let newByte = 0;
+
+	for (var i = 0; i < boolArray.length; i++) {
+		//create mask
+		let mask = createBitMask((boolArray[i] == true), counter);
+
+		newByte += mask;
+
+		counter++;
+		if (counter >= 8) {
+			byteArray.push(newByte);
+			newByte = 0;
+			counter = 0;
+		}
+	}
+
+	//push extra byte at the end
+	if (counter != 0) {
+		byteArray.push(newByte);
+	}
+
+	return byteArray;
+}
+
+function bytesToBoolArray(byteArray = []) {
+	let boolArray = [];
+
+	for (var i = 0; i < byteArray.length; i++) {
+		for (var j = 0; j < 8; j++) {
+			//create mask
+			let mask = createBitMask(1, j);
+
+			let result = (byteArray[i] & mask) != 0;
+			boolArray.push(result);
+		}
+	}
+
+	return boolArray;
+}</script>
+	<script>"use strict";
+
+//sets a single bit to on or off
+function setSingleBit(number, bitIndex, isOn) {
+	//validate args
+	isOn = !!isOn; //booleanize the value
+
+	// create mask
+	let bitMask = 1 << bitIndex;
+
+	return number ^= ((-isOn ^ number) & bitMask);
+}
+
+function createBitMask(numBits, leastPosition) {
+	
+	let mask = (1 << numBits) - 1;
+	return mask << leastPosition;
+}</script>
+	<script>"use strict";
+
+//this handles generic communication processing
+
+let connected = false;
+
+function setConnected(value) {
+	connected = value;
+
+	//update ui
+	updateConnectionStatus();
+}
+
+//what connection type is currently being used
+let serialMode = false;
+let wifiMode = false;
+
+//used to define current communication with the arduino
+const TransferType = {
+	NONE: 0,
+	REFRESH: 1,
+	RESTART: 2,
+	APPLY_CHANGE: 3,
+	TOGGLE_TEST: 4,
+	RUN_TEST: 5
+}
+
+let transferType = TransferType.NONE;
+let messageCounter = 0;
+
+//prevents multiple communication commands at the same time
+let comLock = false;
+
+function setComLock(value) {
+	comLock = value;
+
+	//update ui
+	updateSendingStatus();
+}
+
+let askReloadOnConnect = true;
+//called after connecting
+function onConnect() {
+	//update ui
+	setConnected(true);
+
+	//refresh data as well
+	setTimeout(sendRefreshCommand, 100);
+}
+
+function onDisconnect() {
+	//update ui
+	setConnected(false);
+}
+
+//processes incoming data from the arduino
+function processInfo(value) {
+	console.log("[Received] " + value);
+
+	//collecting data from a refresh command
+	if (transferType == TransferType.REFRESH) {
+		let parsedObject;
+		switch (true) {
+			case (messageCounter < 7):
+				//load week day info
+
+				//get data
+				parsedObject = JSON.parse(value);
+
+				//covert pivot on bytes to bool array
+				let pivotOnBool = bytesToBoolArray(parsedObject.pivotOn);
+
+				//deep copy arrays
+				let newCutList = [];
+				for (var i = 0; i < parsedObject.cutList.length; i++) {
+					//cast values so that getter and setters are preserved
+					newCutList.push(new TimeCut(parsedObject.cutList[i].hour, parsedObject.cutList[i].min, pivotOnBool[i]));
+				}
+
+				//apply values
+				loadedData.weekDayInfo[messageCounter].usedCuts = parsedObject.usedCuts;
+				loadedData.weekDayInfo[messageCounter].cutList = newCutList;
+
+				messageCounter++;
+				break;
+			case (messageCounter == 7):
+				//load holiday info
+
+				//get data
+				parsedObject = JSON.parse(value);
+
+				//deep copy arrays
+				let newHolidayTimeSlots = [];
+				for (var i = 0; i < parsedObject.holidayTimeSlots.length; i++) {
+					//reduce day value by one
+					parsedObject.holidayTimeSlots[i].dayRestrict -= 1;
+					//cast values so that getter and setters are preserved
+					newHolidayTimeSlots.push(Object.assign(new HolidaySlot, parsedObject.holidayTimeSlots[i]));
+				}
+
+				//apply values
+				loadedData.holidayInfo.usedHolidaySlots = parsedObject.usedHolidaySlots;
+				loadedData.holidayInfo.holidayTimeSlots = newHolidayTimeSlots;
+
+				messageCounter++;
+				break;
+			case (messageCounter == 8):
+				//load procedure info
+
+				//get data
+				parsedObject = JSON.parse(value);
+
+				//get start procedure
+				loadedData.startProcedure.defaultRelayOn = parsedObject.startProcedure.defaultRelayOn;
+				loadedData.startProcedure.usedCuts = parsedObject.startProcedure.usedCuts;
+				//deep copy array
+				let newStartCutList = [];
+				for (var i = 0; i < parsedObject.startProcedure.cutList.length; i++) {
+					newStartCutList.push(Object.assign(new ProcedureCut, parsedObject.startProcedure.cutList[i]));
+				}
+				loadedData.startProcedure.cutList = newStartCutList;
+
+				//get stop procedure
+				loadedData.stopProcedure.defaultRelayOn = parsedObject.stopProcedure.defaultRelayOn;
+				loadedData.stopProcedure.usedCuts = parsedObject.stopProcedure.usedCuts;
+				//deep copy array
+				let newStopCutList = [];
+				for (var i = 0; i < parsedObject.stopProcedure.cutList.length; i++) {
+					newStopCutList.push(Object.assign(new ProcedureCut, parsedObject.stopProcedure.cutList[i]));
+				}
+				loadedData.stopProcedure.cutList = newStopCutList;
+
+				messageCounter++;
+				break;
+			case (messageCounter == 9):
+				//load extra info
+
+				//get data
+				parsedObject = JSON.parse(value);
+
+				//display gps time
+				updateGPSTime(parsedObject.gpsHour, parsedObject.gpsMin);
+
+				//get constants
+				maxCutsPerDay = parsedObject.maxCutsPerDay;
+				maxHolidays = parsedObject.maxHolidaySlots;
+
+				//set testing mode
+				setTestingMode(parsedObject.testingMode);
+
+				//get general settings
+				loadedData.generalSettings.wifiEnabled = parsedObject.wifiEnabled;
+				loadedData.generalSettings.wifiSSID = parsedObject.wifiSSID;
+				loadedData.generalSettings.wifiPassword = parsedObject.wifiPassword;
+
+				//set the data as clean
+				loadedData.dirty = false;
+
+				//mark transmision complete
+				CommandFinished();
+
+				//refresh the ui
+				refreshUI();
+				break;
+		}
+	} else if (transferType == TransferType.APPLY_CHANGE) {
+		if (!value.includes("Saved Changes")) {
+			if (!value.includes("Modified")) {
+				writeToErrorLog("[From brain]: " + value, false);
+				console.log("length: " + value.length + ", " + "Saved Changes".length);
+				console.log("char: " + value.charCodeAt(0) + ", " + "Saved Changes".charCodeAt(0));
+				console.log("end char: " + value.charCodeAt(value.length - 1) + ", " + "Saved Changes".charCodeAt("Saved Changes".length - 1));
+			}
+		} else {
+			//all data hase been sent
+			//mark transmision complete
+			CommandFinished();
+
+			//refresh the data to sync changes and ensure everything saved correctly
+			sendRefreshCommand();
+		}
+	} else if (transferType == TransferType.TOGGLE_TEST) {
+		//reponse from toggling test mode
+		//mark transmision complete
+		CommandFinished();
+
+		//refresh the data to sync changes and ensure everything saved correctly
+		sendRefreshCommand();
+	} else if (transferType == TransferType.RUN_TEST) {
+		//process response
+		let message = value.split(",");
+
+		if (message[0].includes("Test Results")) {
+			let testResults = new TestResults();
+			testResults.pivotOn = parseInt(message[1]);
+			testResults.relayOn = parseInt(message[2]);
+
+			testHandler.addResult(testResults);
+
+			//mark transmision complete
+			CommandFinished();
+		} else if (!value.includes("Test queued")) {
+			writeToErrorLog("[From brain]: " + value, false);
+		}
+	} else if (transferType == TransferType.RESTART) {
+		//mark transmision complete
+		CommandFinished();
+	}
+}
+
+//do check to make sure a command can be sent
+async function CommandSetup(_transferType) {
+	//validate args
+	console.log();
+	if (typeof _transferType != "number") {
+		writeToErrorLog("Invalid Transfer Type: " + (typeof _transferType));
+		return false;
+	}
+
+	//check that we are connected
+	if (!serialMode && !wifiMode) {
+		writeToErrorLog("Not Connected");
+		return false;
+	}
+
+	//wait for com lock to release
+	let counter = 0;
+	const sleepInterval = 50;
+	const maxSleepTime = 3000;
+	while (comLock) {
+		if ((counter * sleepInterval) < maxSleepTime) {
+			counter++;
+			await sleep(sleepInterval);
+		} else {
+			writeToErrorLog("Communication took to long. Consider reconecting");
+			return false;
+		}
+	}
+
+	//reserve the comLock for this function
+	setComLock(true);
+
+	//set transferType
+	transferType = _transferType;
+
+	//set message count to 0
+	messageCounter = 0;
+
+	return true;
+}
+
+//resets states so the next command can be sent
+function CommandFinished() {
+	//set transferType
+	transferType = TransferType.NONE;
+
+	//set message count to 0
+	messageCounter = 0;
+
+	//release the comLock
+	setComLock(false);
+}
+
+
+//sends refresh request to the arduino
+async function sendRefreshCommand() {
+	//prepare to send the command
+	if (!await CommandSetup(TransferType.REFRESH)) {
+		return;
+	}
+
+	//send data
+	if (serialMode) {
+		writeToStream("refresh");
+	} else if (wifiMode) {
+		sendWifiMessage("refresh");
+	}
+	else {
+		setComLock(false);
+		writeToErrorLog("Communication protocol was not found");
+	}
+}
+
+//sends data to save to the arduino
+async function sendApplyChanges() {
+	//prepare to send the command
+	if (!await CommandSetup(TransferType.APPLY_CHANGE)) {
+		return;
+	}
+
+	//create payload
+	let payLoad = [];
+
+	//send normal info
+	for (var i = 0; i < 7; i++) {
+		let normalMessage = "slot," + i + "," + JSON.stringify(loadedData.weekDayInfo[i]);
+		payLoad.push(normalMessage);
+	}
+
+	//send holiday info
+	if (loadedData.holidayInfo.usedHolidaySlots > 0) {
+		for (var i = 0; i < loadedData.holidayInfo.usedHolidaySlots; i++) {
+			//build message
+			let holidayMessage = "holiday,";
+			holidayMessage += i + ","; //slot index
+			holidayMessage += loadedData.holidayInfo.usedHolidaySlots + ","; //used slots
+			holidayMessage += loadedData.holidayInfo.holidayTimeSlots[i].pivotOn + ","; //relay status
+			holidayMessage += loadedData.holidayInfo.holidayTimeSlots[i].beginHour + ","; //begin hour
+			holidayMessage += loadedData.holidayInfo.holidayTimeSlots[i].beginMin + ","; //begin min
+			holidayMessage += loadedData.holidayInfo.holidayTimeSlots[i].endHour + ","; //end hour
+			holidayMessage += loadedData.holidayInfo.holidayTimeSlots[i].endMin + ","; //end min
+			holidayMessage += loadedData.holidayInfo.holidayTimeSlots[i].holidayMonthRestrict + ","; //holiday month restrict
+
+			//only extract info for the correct holiday type
+			let dayRestrict = -1;
+			let holidayWeekRestrict = 0;
+			let holidayweekDayRestrict = -1;
+			if (loadedData.holidayInfo.holidayTimeSlots[i].holidayWeekRestrict == 0) {
+				//specific day holiday
+				dayRestrict = (loadedData.holidayInfo.holidayTimeSlots[i].dayRestrict + 1);
+
+			} else {
+				//day of the week holiday
+				holidayWeekRestrict = loadedData.holidayInfo.holidayTimeSlots[i].holidayWeekRestrict;
+				holidayweekDayRestrict = loadedData.holidayInfo.holidayTimeSlots[i].holidayweekDayRestrict;
+			}
+
+			holidayMessage += dayRestrict + ","; //day restrict
+			holidayMessage += holidayWeekRestrict + ","; //week restrict
+			holidayMessage += holidayweekDayRestrict + ","; //week day 
+
+			//send message
+			payLoad.push(holidayMessage);
+		}
+	} else {
+		//clear holidays
+		//build message
+		let holidayMessage = "holiday,";
+		holidayMessage += 0 + ","; //slot index
+		holidayMessage += 0 + ","; //used slots
+		holidayMessage += 0 + ","; //relay status
+		holidayMessage += 0 + ","; //begin hour
+		holidayMessage += 0 + ","; //begin min
+		holidayMessage += 0 + ","; //end hour
+		holidayMessage += 0 + ","; //end min
+		holidayMessage += 0 + ","; //holiday month restrict
+		holidayMessage += -1 + ","; //day restrict
+		holidayMessage += 0 + ","; //week restrict
+		holidayMessage += 0 + ","; //week day 
+
+		//send message
+		payLoad.push(holidayMessage);
+	}
+
+	//send procedure info
+	payLoad.push("procedure,0," + JSON.stringify(loadedData.startProcedure));
+	payLoad.push("procedure,1," + JSON.stringify(loadedData.stopProcedure));
+
+	//send general settings
+	let settingsMessage = "settings,";
+	settingsMessage += loadedData.generalSettings.wifiEnabled + ",";
+	settingsMessage += loadedData.generalSettings.wifiSSID + ",";
+	settingsMessage += loadedData.generalSettings.wifiPassword + ",";
+	payLoad.push(settingsMessage);
+
+	//tell the arduino to commit the changes
+	payLoad.push("save");
+
+	//send data
+	if (serialMode) {
+		//send payload
+		while (payLoad.length > 0) {
+			writeToStream(payLoad.shift());
+		}
+
+		//restart the arduino so that wifi settings changes are applied
+		restartArduino();
+	} else if (wifiMode) {
+		//send payload
+		while (payLoad.length > 0) {
+			await sendWifiMessage(payLoad.shift());
+		}
+
+		//restart the arduino so that wifi settings changes are applied
+		restartArduino();
+	} else {
+		setComLock(false);
+		writeToErrorLog("Communication protocol was not found");
+	}
+
+
+}
+
+//restarts the arduino
+async function restartArduino() {
+	//prepare to send the command
+	if (!await CommandSetup(TransferType.RESTART)) {
+		return;
+	}
+
+	//send data
+	if (serialMode) {
+		//tell the arduino restart
+		writeToStream("restart");
+	} else if (wifiMode) {
+		//tell the arduino restart
+		sendWifiMessage("restart");
+	} else {
+		setComLock(false);
+		writeToErrorLog("Communication protocol was not found");
+	}
+}
+
+//puts the arduino in test mode
+async function toggleTestMode(isOn) {
+	//validate args
+	if (isOn === undefined) {
+		isOn = false;
+	}
+
+	//prepare to send the command
+	if (!await CommandSetup(TransferType.TOGGLE_TEST)) {
+		return;
+	}
+
+	//send data
+	if (serialMode) {
+		//tell the arduino to set test mode
+		writeToStream("testMode," + String(isOn));
+	} else if (wifiMode) {
+		//tell the arduino to set test mode
+		sendWifiMessage("testMode," + String(isOn));
+	} else {
+		setComLock(false);
+		writeToErrorLog("Communication protocol was not found");
+	}
+}
+
+async function sendSingleTest(testData) {
+	//validate args
+	if (!testData instanceof TimeTestStruct) {
+		return;
+	}
+
+	//prepare to send the command
+	if (!await CommandSetup(TransferType.RUN_TEST)) {
+		return;
+	}
+
+	//create message
+	//tell the arduino run a test
+	let message = "testRun,";
+
+	//add parameters
+	//time since epoch in seconds
+	message += Math.floor(testData.date.getTime() / 1000) + ",";
+	//minutes after the procedure has been started
+	message += testData.procedureMin + ",";
+
+	//send data
+	if (serialMode) {
+		writeToStream(message);
+	} else if (wifiMode) {
+		sendWifiMessage(message);
+	} else {
+		setComLock(false);
+		writeToErrorLog("Communication protocol was not found");
+	}
+}</script>
+	<script>"use strict";
+
+//this handles making a serial connection
+
+//serial port
+let port;
+let reader;
+let inputDone;
+let outputDone;
+let inputStream;
+let outputStream;
+
+//input field for baudrate selection
+const baudRate = document.getElementById("baudRateField");
+
+//connect button 
+const butConnect = document.getElementById("connect");
+
+//when connect button is pressed
+async function serialConnectBtn() {
+	//disconnect
+	if (port) {
+		//send disconnect
+		await serialDisconnect();
+
+		//update button
+		butConnect.textContent = "Connect";
+
+		//sets connection commands
+		serialMode = false;
+
+		//run disconnect commands
+		onDisconnect();
+
+		return;
+	}
+
+	//connect
+	await serialConnect();
+
+	//toggle what the button displays
+	butConnect.textContent = "Disconnect";
+
+	//sets connection commands
+	serialMode = true;
+
+	//run connect commands
+	onConnect();
+}
+
+//creates a serial connection
+async function serialConnect() {
+	//ask user to select a port
+	port = await navigator.serial.requestPort();
+
+	//open port async with selected baudrate
+	try {
+		await port.open({ baudRate: baudRate.value });
+	} catch (err) {
+		// console.error(err);
+
+		//set the port back to null
+		port = null;
+
+		//display failed
+		writeToErrorLog(err);
+		return;
+	}
+
+	//create out stream
+	const encoder = new TextEncoderStream();
+	outputDone = encoder.readable.pipeTo(port.writable);
+	outputStream = encoder.writable;
+
+	//used to stop echoing?
+	// writeToStream("\x03", "echo(false);");
+
+	//set up input stream
+	let decoder = new TextDecoderStream();
+	inputDone = port.readable.pipeTo(decoder.writable);
+	inputStream = decoder.readable.pipeThrough(
+		new TransformStream(new LineBreakTransformer())
+	);
+
+	//create reader object that monitors the stream
+	reader = inputStream.getReader();
+
+	//wait for incoming data
+	readLoop();
+}
+
+//closes a connected serial port
+async function serialDisconnect() {
+	//close reader object monitoring the stream
+	if (reader) {
+		await reader.cancel();
+		await inputDone.catch(() => { });
+		reader = null;
+		inputDone = null;
+	}
+
+	//close the output stream
+	if (outputStream) {
+		await outputStream.getWriter().close();
+		await outputDone;
+		outputStream = null;
+		outputDone = null;
+	}
+
+	//close the port
+	try {
+		await port.close();
+	} catch (err) {
+		console.error(err);
+
+		//display failed closing
+		writeToErrorLog(err);
+	}
+
+	port = null;
+}
+
+//loop that gets incoming serial data from the reader object
+let serialBuffer = "";
+async function readLoop() {
+	while (true) {
+		const { value, done } = await reader.read();
+		if (value) {
+			processInfo(value);
+		}
+		if (done) {
+			console.log("[readLoop] DONE - Serial quit", done);
+			reader.releaseLock();
+			break;
+		}
+	}
+}
+
+//send data to arduino (takes a string)
+function writeToStream(...lines) {
+	const writer = outputStream.getWriter();
+	lines.forEach((line) => {
+		console.log("[SEND]", line);
+
+		writer.write(line + "\n");
+	});
+	writer.releaseLock();
+}
+
+//this is the reader class
+class LineBreakTransformer {
+	constructor() {
+		// A container for holding stream data until a new line.
+		this.container = "";
+	}
+
+	transform(chunk, controller) {
+		this.container += chunk;
+		this.container.replace("\r\n", '\n');
+		this.container.replace(/\r/g, '');
+		const lines = this.container.split("\n");
+		this.container = lines.pop();
+		// console.log("Chunk \"" + chunk + "\", Remaining Container: " + this.container);
+		lines.forEach((line) => controller.enqueue(line));
+	}
+
+	flush(controller) {
+		controller.enqueue(this.container);
+	}
+}</script>
+	<script>"use strict";
+
+//connect button 
+const wifiConnectbutton = document.getElementById("wifiConnect");
+
+async function wifiConnectClick() {
+	//disconnect
+	if (wifiMode) {
+		//run wifi specific disconnect commands
+		wifiDisconnect();
+
+		//update button
+		wifiConnectbutton.textContent = "Connect";
+
+		//sets connection commands
+		wifiMode = false;
+
+		//run universal disconnect commands
+		onDisconnect();
+
+		return;
+	}
+
+	//connect
+	if (await wifiConnect()) {
+		//toggle what the button displays
+		wifiConnectbutton.textContent = "Disconnect";
+
+		//sets connection commands
+		wifiMode = true;
+
+		//run universal connect commands
+		onConnect();
+	}
+}
+
+async function wifiConnect() {
+	writeToErrorLog("Attempting to connect. \nMake sure you connect to the correct wifi", false);
+	let checkPromise;
+	try {
+		checkPromise = await fetch("http://192.168.4.1", {
+			method: "GET",
+		});
+		let checkResponse = await checkPromise.text();
+
+		if (!checkResponse.includes("Ready to receive")) {
+			//throws an error
+			writeToErrorLog("Failed to connect");
+			return false;
+		}
+
+		writeToErrorLog("Connected", false);
+
+		//all checks passed without an error
+		return true;
+	} catch (err) {
+		if (err.message.includes("Failed to fetch")) {
+			writeToErrorLog("Could not connect");
+		} else {
+			console.log("message: " + err.message);
+			writeToErrorLog(err);
+		}
+	}
+
+	//an error occured
+	return false;
+}
+
+function wifiDisconnect() {
+	//wifi specific disconnect commands
+}
+
+async function sendWifiMessage(message, requestType = "POST") {
+	//create data to send
+	let newForm = new FormData();
+	newForm.append("wifiWrapper", message);
+
+	//send message
+	let responsePromise = await fetch("http://192.168.4.1", {
+		method: requestType,
+		body: newForm
+	});
+
+	let bulkResponse = await responsePromise.text();
+
+	let responses = bulkResponse.split('\n');
+
+	responses.forEach(processInfo);
+}
+</script>
+	<script>"use strict";
+
+//this handles generic changes to the user interface
+
+//runs collapsible menus
+function setupCollapsibleMenus() {
+	var coll = document.getElementsByClassName("collapsible");
+
+	for (var i = 0; i < coll.length; i++) {
+		coll[i].nextElementSibling.classList.add("collapsibleContent");
+
+		coll[i].addEventListener("click", function () {
+			this.classList.toggle("active");
+			var content = this.nextElementSibling;
+			if (content.style.maxHeight) {
+				content.style.maxHeight = null;
+			} else {
+				content.style.maxHeight = content.scrollHeight + "px";
+			}
+		});
+	}
+}
+
+//used to refresh the length on menus (call twice)
+function toogleCollapsibleMenus() {
+	var coll = document.getElementsByClassName("collapsible");
+
+	for (var i = 0; i < coll.length; i++) {
+		coll[i].click();
+	}
+}
+
+//#region global info
+
+//updates connection status
+function updateConnectionStatus() {
+	if (connected) {
+		document.getElementById("connectionStatus").classList.remove("invalid");
+
+		if (testingMode) {
+			document.getElementById("connectionStatus").classList.add("testing");
+			document.getElementById("connectionStatus").classList.remove("valid");
+			document.getElementById("connectionStatus").innerText = "Connection Status: Testing";
+		} else {
+			document.getElementById("connectionStatus").classList.add("valid");
+			document.getElementById("connectionStatus").classList.remove("testing");
+			document.getElementById("connectionStatus").innerText = "Connection Status: Connected";
+		}
+
+
+		//hide other connection options
+		if (serialMode) {
+			//serial
+			document.getElementById("wifiControls").classList.add("hidden");
+		} else {
+			//wifi
+			document.getElementById("serialControls").classList.add("hidden");
+		}
+	} else {
+		document.getElementById("connectionStatus").classList.add("invalid");
+		document.getElementById("connectionStatus").classList.remove("valid");
+		document.getElementById("connectionStatus").classList.remove("testing");
+		document.getElementById("connectionStatus").innerText = "Connection Status: Not Connected";
+
+
+		//display all connection options
+		document.getElementById("serialControls").classList.remove("hidden");
+		document.getElementById("wifiControls").classList.remove("hidden");
+	}
+
+	//toggle menus since height may have changed
+	toogleCollapsibleMenus();
+	toogleCollapsibleMenus();
+}
+
+//displays if all changes are saved
+function updateDataStatus() {
+	if (loadedData.dirty) {
+		document.getElementById("dataStatus").textContent = "Unsaved Changes";
+		document.getElementById("dataStatus").classList.add("invalid");
+		document.getElementById("dataStatus").classList.remove("valid");
+	} else {
+		document.getElementById("dataStatus").textContent = "All changes saved";
+		document.getElementById("dataStatus").classList.add("valid");
+		document.getElementById("dataStatus").classList.remove("invalid");
+	}
+}
+
+function updateSendingStatus() {
+	if (comLock) {
+		document.getElementById("sendingStatus").textContent = "Sending/Receiving in progress";
+		document.getElementById("sendingStatus").classList.add("testing");
+		document.getElementById("sendingStatus").classList.remove("valid");
+	} else {
+		document.getElementById("sendingStatus").textContent = "Not Sending/Receiving";
+		document.getElementById("sendingStatus").classList.add("valid");
+		document.getElementById("sendingStatus").classList.remove("testing");
+	}
+}
+
+//called when refresh button is pressed
+function refreshDataClick() {
+	if (!loadedData.dirty || confirm("This will lose any changes. Are you sure you want to refresh?") == true) {
+		sendRefreshCommand();
+	}
+}
+
+function applyChangesClick() {
+	if (confirm("Are you sure you want to apply changes?") == true) {
+		sendApplyChanges();
+	}
+}
+
+//writes error to log, then throws it if true
+function writeToErrorLog(message, throwError = true) {
+	document.getElementById("errorLog").textContent += "\n" + message;
+
+	if (throwError) {
+		throw console.error(message);
+	}
+}
+
+//clears error clog
+function clearErrorLogClick() {
+	document.getElementById("errorLog").textContent = "";
+}
+
+//#endregion
+
+
+//#region Connection menu
+
+//called when the dropdown for serial baud rate is changed
+function setBaudRate() {
+	baudRate.value = document.getElementById("baudSelect").value;
+}
+
+//#endregion
+
+//#region General Settings
+function refreshGeneralSettings() {
+	document.getElementById("enableWifiToggle").checked = loadedData.generalSettings.wifiEnabled;
+	document.getElementById("wifiNameInput").value = loadedData.generalSettings.wifiSSID;
+	document.getElementById("wifiPassInput").value = loadedData.generalSettings.wifiPassword;
+}
+
+function enableWifiToggleClick() {
+	loadedData.generalSettings.wifiEnabled = document.getElementById("enableWifiToggle").checked;
+}
+
+function wifiNameChanged() {
+	loadedData.generalSettings.wifiSSID = document.getElementById("wifiNameInput").value;
+}
+
+function wifiPassChanged() {
+	loadedData.generalSettings.wifiPassword = document.getElementById("wifiPassInput").value;
+}
+
+//#endregion
+
+
+//#region Timeline methods
+
+//used to create timelines
+
+//build a time slot button
+function createTimeSlotButton(currentCut, nextCut, isOn = false, clickFunc) {
+	//validate args
+	if (currentCut.hour === undefined) {
+		currentCut.hour = 0;
+	}
+
+	if (currentCut.min === undefined) {
+		currentCut.min = 0;
+	}
+
+	if (nextCut.hour === undefined) {
+		nextCut.hour = 0;
+	}
+
+	if (nextCut.min === undefined) {
+		nextCut.min = 0;
+	}
+
+
+	//create table data element
+	let tableData = document.createElement("td");
+
+	//create new button
+	let newRelayButton = document.createElement("Button");
+
+	//calculate time in minutes
+	let startTime = (currentCut.hour * 60) + currentCut.min;
+	let endTime = (nextCut.hour * 60) + nextCut.min;
+
+	let styleWidth = ((endTime - startTime) / minutesInADay) * 100;
+	let stylePosition = (startTime / minutesInADay) * 100;
+
+	//set width
+	// newRelayButton.style.width = styleWidth + "%";
+	// newRelayButton.style.flex = styleWidth;
+	// tableData.colSpan = styleWidth;
+	tableData.style.width = styleWidth + "%";
+	newRelayButton.style.width = "100%";
+
+	//set position
+	// newRelayButton.style.left = stylePosition + "%";
+
+	//set color
+	if (isOn) {
+		newRelayButton.classList.add("valid");
+	} else {
+		newRelayButton.classList.add("invalid");
+	}
+
+	//add other formating
+	if (styleWidth != 0) {
+		tableData.style.padding = "0";
+
+		newRelayButton.style.padding = "0";
+		newRelayButton.style.border = "solid";
+		newRelayButton.style.cursor = "pointer";
+		newRelayButton.style.height = "30px";
+		newRelayButton.style.borderColor = "black";
+		newRelayButton.style.borderWidth = "1px";
+	} else {
+		tableData.style.display = "none";
+		newRelayButton.style.display = "none";
+	}
+
+	//add on click function
+	if (clickFunc !== undefined) {
+		newRelayButton.addEventListener("click", clickFunc);
+	}
+
+	//add button to the table data
+	tableData.appendChild(newRelayButton);
+
+	return tableData;
+}
+
+//builds a time line marker
+function createTimeLine(currentCut, nextCut) {
+	//validate args
+	if (currentCut.hour === undefined) {
+		currentCut.hour = 0;
+	}
+
+	if (currentCut.min === undefined) {
+		currentCut.min = 0;
+	}
+
+	if (nextCut.hour === undefined) {
+		nextCut.hour = 0;
+	}
+
+	if (nextCut.min === undefined) {
+		nextCut.min = 0;
+	}
+
+	//create table data element
+	let tableData = document.createElement("td");
+
+	//create div
+	let timeLineDiv = document.createElement("div");
+
+	//calculate time
+	let startTime = (currentCut.hour * 60) + currentCut.min;
+	let endTime = (nextCut.hour * 60) + nextCut.min;
+	let styleWidth = ((endTime - startTime) / minutesInADay) * 100;
+
+	//fix overflows with minutes
+	while (currentCut.min >= 60) {
+		currentCut.min -= 60;
+		currentCut.hour += 1;
+	}
+
+	//set text
+	timeLineDiv.textContent = String(currentCut.hour).padStart(2, "0") + ":" + String(currentCut.min).padStart(2, "0");
+
+	//set width
+	tableData.style.width = styleWidth + "%";
+	timeLineDiv.style.width = "100%";
+
+	//add other formating
+	if (styleWidth != 0) {
+		tableData.style.padding = "0";
+
+		timeLineDiv.style.border = "solid";
+		timeLineDiv.style.cursor = "pointer";
+		// timeLineDiv.style.height = "30px";
+		timeLineDiv.style.borderColor = "black";
+		timeLineDiv.style.borderWidth = "1px";
+	} else {
+		tableData.style.display = "none";
+		timeLineDiv.style.display = "none";
+	}
+
+	//add div to the table data
+	tableData.appendChild(timeLineDiv);
+
+	return tableData;
+}
+
+//#endregion
+
+function refreshUI() {
+	//refresh time slot menu
+	refreshTimeSlotUI();
+
+	//refresh the holiday menu
+	refreshHolidayUI();
+
+	//refresh the general settings menu
+	refreshGeneralSettings();
+
+	//refresh procedures
+	refreshProcedureUi();
+
+	//toggle menus since height may have changed
+	toogleCollapsibleMenus();
+	toogleCollapsibleMenus();
+}</script>
+	<script>"use strict";
+
+//this stores and handles memory
+
+//constants provided from arduino
+let maxProcedureCuts = 99;
+let maxCutsPerDay = 99;
+let maxHolidays = 99;
+
+//#region memory templates
+//these classes represent the json sent by the arduino
+
+function ProcedureCut(_min, _relayOn) {
+	var privateMin;
+	var privateRelayOn = 0;
+
+	// Create getters and setters
+	Object.defineProperty(this, "min", {
+		get: function () {
+			return privateMin;
+		},
+		set: function (_min) {
+			privateMin = _min;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "relayOn", {
+		get: function () {
+			return privateRelayOn;
+		},
+		set: function (_relayOn) {
+			privateRelayOn = _relayOn;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	this.getRelayOn = function(relayIndex)
+	{
+		// create mask
+		let mask = createBitMask(1, relayIndex);
+
+		// check mask and return value
+		return (privateRelayOn & mask) != 0;
+	}
+
+	//validate and apply args
+	if (_min !== undefined) {
+		privateMin = _min;
+
+		//mark data dirty
+		loadedData.dirty = true;
+	}
+
+	if (_relayOn !== undefined) {
+		privateRelayOn = _relayOn;
+
+		//mark data dirty
+		loadedData.dirty = true;
+	}
+
+	this.toJSON = function () {
+		return {
+			min: privateMin,
+			relayOn: privateRelayOn
+		}
+	}
+}
+
+function Procedure() {
+	var privateDefaultRelayOn = 0;
+	var privateUsedCuts = 0;
+	var privateCutList = [new ProcedureCut()];
+
+	// Create getters and setters
+	Object.defineProperty(this, "defaultRelayOn", {
+		get: function () {
+			return privateDefaultRelayOn;
+		},
+		set: function (_defaultRelayOn) {
+			privateDefaultRelayOn = _defaultRelayOn;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "usedCuts", {
+		get: function () {
+			return privateUsedCuts;
+		},
+		set: function (_usedCuts) {
+			privateUsedCuts = _usedCuts;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "cutList", {
+		get: function () {
+			return privateCutList;
+		},
+		set: function (_cutList) {
+			privateCutList = _cutList;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	this.toJSON = function () {
+		return {
+			defaultRelayOn: privateDefaultRelayOn,
+			usedCuts: privateUsedCuts,
+			cutList: privateCutList
+		}
+	}
+}
+
+function TimeCut(_hour, _min, isOn) {
+	var privateHour = 0;
+	var privateMin = 0;
+	var privatePivotOn = false;
+
+	// Create getters and setters
+	Object.defineProperty(this, "hour", {
+		get: function () {
+			return privateHour;
+		},
+		set: function (_hour) {
+			privateHour = _hour;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "min", {
+		get: function () {
+			return privateMin;
+		},
+		set: function (_min) {
+			privateMin = _min;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "pivotOn", {
+		get: function () {
+			return privatePivotOn;
+		},
+		set: function (_pivotOn) {
+			privatePivotOn = _pivotOn;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	//validate and apply args
+	if (_hour !== undefined) {
+		privateHour = _hour;
+
+		//mark data dirty
+		loadedData.dirty = true;
+	}
+
+	if (_min !== undefined) {
+		privateMin = _min;
+
+		//mark data dirty
+		loadedData.dirty = true;
+	}
+
+	if (isOn !== undefined) {
+		privatePivotOn = isOn;
+
+		//mark data dirty
+		loadedData.dirty = true;
+	}
+
+	this.toJSON = function(){
+		return {
+			hour: privateHour,
+			min: privateMin
+		}
+	}
+}
+
+function WeekdayInfo() {
+	//private
+	var privateUsedCuts = 1;
+	var privateCutList = [new TimeCut()];
+
+	//define getters and setters
+	Object.defineProperty(this, "usedCuts", {
+		get: function () {
+			return privateUsedCuts;
+		},
+		set: function (_usedCuts) {
+			privateUsedCuts = _usedCuts;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "cutList", {
+		get: function () {
+			return privateCutList;
+		},
+		set: function (_cutList) {
+			privateCutList = _cutList;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	this.toJSON = function () {
+		//get pivotOn bool array
+		let boolArray = [];
+		for (var i = 0; i < privateCutList.length; i++) {
+			boolArray.push(privateCutList[i].pivotOn)
+		}
+
+		//convert bool array to bytes array
+		let byteArray = boolArrayToBytes(boolArray);
+
+		//send values
+		return {
+			usedCuts: privateUsedCuts,
+			cutList: privateCutList,
+			pivotOnList: byteArray
+		}
+	}
+}
+
+function HolidaySlot() {
+	var privatePivotOn = 0;
+
+	var privateBeginHour = 0;
+	var privateBeginMin = 0;
+	var privateEndHour = 0;
+	var privateEndMin = 0;
+
+	//month of the holiday
+	var privateHolidayMonthRestrict = 0;
+
+	//set to -1 to ignore (speciic day)
+	var privateDayRestrict = 0;
+
+	//set to 0 to ignore (week of the month)
+	var privateHolidayWeekRestrict = 0;
+	var privateHolidayweekDayRestrict = 0;
+
+	//define getters and setters
+
+	Object.defineProperty(this, "pivotOn", {
+		get: function () {
+			return privatePivotOn;
+		},
+		set: function (_pivotOn) {
+			privatePivotOn = _pivotOn;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "beginHour", {
+		get: function () {
+			return privateBeginHour;
+		},
+		set: function (_beginHour) {
+			privateBeginHour = _beginHour;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "beginMin", {
+		get: function () {
+			return privateBeginMin;
+		},
+		set: function (_beginMin) {
+			privateBeginMin = _beginMin;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "endHour", {
+		get: function () {
+			return privateEndHour;
+		},
+		set: function (_endHour) {
+			privateEndHour = _endHour;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "endMin", {
+		get: function () {
+			return privateEndMin;
+		},
+		set: function (_endMin) {
+			privateEndMin = _endMin;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "holidayMonthRestrict", {
+		get: function () {
+			return privateHolidayMonthRestrict;
+		},
+		set: function (_holidayMonthRestrict) {
+			privateHolidayMonthRestrict = _holidayMonthRestrict;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "dayRestrict", {
+		get: function () {
+			return privateDayRestrict;
+		},
+		set: function (_dayRestrict) {
+			privateDayRestrict = _dayRestrict;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "holidayWeekRestrict", {
+		get: function () {
+			return privateHolidayWeekRestrict;
+		},
+		set: function (_holidayWeekRestrict) {
+			privateHolidayWeekRestrict = _holidayWeekRestrict;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "holidayweekDayRestrict", {
+		get: function () {
+			return privateHolidayweekDayRestrict;
+		},
+		set: function (_holidayweekDayRestrict) {
+			privateHolidayweekDayRestrict = _holidayweekDayRestrict;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+}
+
+function HolidayStruct() {
+	var privateUsedHolidaySlots = 0;
+	var privateHolidayTimeSlots = [new HolidaySlot()];
+
+	Object.defineProperty(this, "usedHolidaySlots", {
+		get: function () {
+			return privateUsedHolidaySlots;
+		},
+		set: function (_usedHolidaySlots) {
+			privateUsedHolidaySlots = _usedHolidaySlots;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "holidayTimeSlots", {
+		get: function () {
+			return privateHolidayTimeSlots;
+		},
+		set: function (_holidayTimeSlots) {
+			privateHolidayTimeSlots = _holidayTimeSlots;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+}
+
+function GeneralSettings() {
+	var privateWifiEnabled = false;
+	var privateWifiSSID = "";
+	var privateWifiPassword = "";
+
+	//define getters and setters
+
+	Object.defineProperty(this, "wifiEnabled", {
+		get: function () {
+			return privateWifiEnabled;
+		},
+		set: function (_wifiEnabled) {
+			privateWifiEnabled = _wifiEnabled;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "wifiSSID", {
+		get: function () {
+			return privateWifiSSID;
+		},
+		set: function (_wifiSSID) {
+			privateWifiSSID = _wifiSSID;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "wifiPassword", {
+		get: function () {
+			return privateWifiPassword;
+		},
+		set: function (_wifiPassword) {
+			privateWifiPassword = _wifiPassword;
+
+			//mark data dirty
+			loadedData.dirty = true;
+		}
+	});
+}
+//#endregion
+
+//stores loaded info
+function memory() {
+	var privateWeekDayInfo = [new WeekdayInfo(), new WeekdayInfo(), new WeekdayInfo(), new WeekdayInfo(), new WeekdayInfo(), new WeekdayInfo(), new WeekdayInfo()];
+	var privateHolidayInfo = new HolidayStruct;
+
+	var privateStartProcedure = new Procedure();
+	var privateStopProcedure = new Procedure();
+
+	var privateGeneralSettings = new GeneralSettings();
+	var privateDirty = true;
+
+	Object.defineProperty(this, "weekDayInfo", {
+		get: function () {
+			return privateWeekDayInfo;
+		},
+		set: function (_weekDayInfo) {
+			privateWeekDayInfo = _weekDayInfo;
+
+			//mark data dirty
+			this.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "holidayInfo", {
+		get: function () {
+			return privateHolidayInfo;
+		},
+		set: function (_holidayInfo) {
+			privateHolidayInfo = _holidayInfo;
+
+			//mark data dirty
+			this.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "startProcedure", {
+		get: function () {
+			return privateStartProcedure;
+		},
+		set: function (_startProcedure) {
+			privateStartProcedure = _startProcedure;
+
+			//mark data dirty
+			this.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "stopProcedure", {
+		get: function () {
+			return privateStopProcedure;
+		},
+		set: function (_stopProcedure) {
+			privateStopProcedure = _stopProcedure;
+
+			//mark data dirty
+			this.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "generalSettings", {
+		get: function () {
+			return privateGeneralSettings;
+		},
+		set: function (_generalSettings) {
+			privateGeneralSettings = _generalSettings;
+
+			//mark data dirty
+			this.dirty = true;
+		}
+	});
+
+	Object.defineProperty(this, "dirty", {
+		get: function () {
+			return privateDirty;
+		},
+		set: function (_dirty) {
+			privateDirty = _dirty;
+
+			//update ui
+			updateDataStatus();
+		}
+	});
+}
+var loadedData = new memory();
+
+//add methods for handling the presented data
+WeekdayInfo.prototype.sortList = function () {
+	this.cutList.sort(function (a, b) {
+		let aTime = (a.hour * 60) + a.min;
+		let bTime = (b.hour * 60) + b.min;
+
+		if (aTime < bTime) {
+			return -1;
+		}
+		if (aTime > bTime) {
+			return 1;
+		}
+		return 0;
+	});
+}
+
+//adds a new time cut
+WeekdayInfo.prototype.addTimeCut = function (hour, min, pivotOn = false) {
+	//check if cut already exists
+	for (let i = 0; i < this.cutList.length; i++) {
+		if (this.cutList[i].hour == hour) {
+			if (this.cutList[i].min == min) {
+				//already exists
+				return;
+			}
+		}
+	}
+
+	//check if we reached the maximum cuts in one day
+	if (this.usedCuts >= maxCutsPerDay) {
+		writeToErrorLog("Max Cuts for one day", false);
+		return;
+	}
+
+	//add to the array
+	if (this.cutList.length <= this.usedCuts) {
+		this.cutList.push(new TimeCut(hour, min, pivotOn));
+	} else {
+		this.cutList[this.usedCuts] = new TimeCut(hour, min, pivotOn);
+	}
+
+	//increment cut counter
+	this.usedCuts++;
+
+	//sort the list after adding
+	loadedData.weekDayInfo[selectedWeekDay.value].sortList();
+}
+
+WeekdayInfo.prototype.removeTimeCut = function (index) {
+	//remove the cut
+	this.cutList.splice(index, 1);
+
+	//decrement counter
+	this.usedCuts--;
+
+	//mark data dirty
+	loadedData.dirty = true;
+}
+
+HolidayStruct.prototype.addHoliday = function () {
+	//check if we reached the maximum cuts in one day
+	if (this.usedHolidaySlots >= maxHolidays) {
+		writeToErrorLog("Max Holidays", false);
+		return;
+	}
+
+	//add to the array
+	if (this.holidayTimeSlots.length <= this.usedHolidaySlots) {
+		this.holidayTimeSlots.push(new HolidaySlot());
+	} else {
+		this.holidayTimeSlots[this.usedHolidaySlots] = new HolidaySlot();
+	}
+
+	//increment counter
+	this.usedHolidaySlots++;
+}
+
+HolidayStruct.prototype.removeHoliday = function (index) {
+	//validate args
+	if (index === undefined || index < 0 || index > this.usedHolidaySlots) {
+		//invalid index
+		return;
+	}
+
+	//remove the slot
+	this.holidayTimeSlots.splice(index, 1);
+
+	//decrement the counter
+	this.usedHolidaySlots--;
+}
+
+
+Procedure.prototype.sortList = function () {
+	this.cutList.sort(function (a, b) {
+		let aTime = a.min;
+		let bTime = b.min;
+
+		if (aTime < bTime) {
+			return -1;
+		}
+		if (aTime > bTime) {
+			return 1;
+		}
+		return 0;
+	});
+}
+
+//adds a new time cut
+Procedure.prototype.addProcedureCut = function (min, relayOn = 0) {
+	//check if cut already exists
+	for (let i = 0; i < this.cutList.length; i++) {
+		if (this.cutList[i].min == min) {
+			//already exists
+			return;
+		}
+	}
+
+	//check if we reached the maximum cuts in one day
+	if (this.usedCuts >= maxProcedureCuts) {
+		writeToErrorLog("Max cuts for one procedure", false);
+		return;
+	}
+
+	//add to the array
+	if (this.cutList.length <= this.usedCuts) {
+		this.cutList.push(new ProcedureCut(min, relayOn));
+	} else {
+		this.cutList[this.usedCuts] = new ProcedureCut(min, relayOn);
+	}
+
+	//increment cut counter
+	this.usedCuts++;
+
+	//sort the list after adding
+	this.sortList();
+}
+
+Procedure.prototype.removeProcedureCut = function (index) {
+	//remove the cut
+	this.cutList.splice(index, 1);
+
+	//decrement counter
+	this.usedCuts--;
+
+	//mark data dirty
+	loadedData.dirty = true;
+}</script>
+	<script>"use strict";
+
+let testingMode = false;
+
+//update ui
+function setTestingMode(_newValue) {
+	//validate args
+	if (_newValue === undefined) {
+		return;
+	}
+
+	//set the value
+	testingMode = _newValue;
+
+	//hide / show testing mode
+	//hide / show gps since it breaks in test mode
+	document.getElementById("testingModeContent").hidden = !testingMode;
+	document.getElementById("gpsTimeDisplayContainer").hidden = testingMode;
+
+	//display new connection status
+	updateConnectionStatus();
+}
+
+
+//data structure
+function TimeTestStruct() {
+	this.pending = false;
+	this.date = new Date();
+	this.procedureMin = 0;
+	this.relayOn = -1;
+}
+
+function TestResults(_pivotOn, _relayOn){
+	this.pivotOn = false;
+	this.relayOn = -1;
+
+	//validate and assign args
+	if (_pivotOn !== undefined) {
+		pivotOn = _pivotOn;
+	}
+
+	if (_relayOn !== undefined) {
+		relayOn = _relayOn;
+	}
+}
+
+//brain that handles test responses
+function TestBrain() {
+	var pendingTests = [];
+	var testResults = [];
+
+	this.pendingTests = pendingTests;
+	this.testResults = testResults;
+
+	this.addTest = function (test) {
+		//validate args
+		if (!test instanceof TimeTestStruct) {
+			return;
+		}
+
+		//add test to the buffer
+		pendingTests.push(test);
+
+		//check the buffers
+		processBuffers();
+	}
+
+	this.addResult = function (result) {
+		//validate args
+		if (!result instanceof TestResults || isNaN(result.pivotOn) || isNaN(result.relayOn)) {
+			return;
+		}
+		//add test result to the buffer
+		testResults.push(result);
+
+		//check the buffers
+		processBuffers();
+	}
+
+	function processBuffers() {
+		if (pendingTests.length > 0 && testResults.length > 0) {
+			//process results
+			displayTestResult(testResults[0]);
+			if (testResults[0].relayOn != pendingTests[0].relayOn && pendingTests[0].relayOn != -1) {
+				//test failed
+
+				//create error message
+				let message = "Test Failed:\n";
+
+				//print time info
+				message += "- Date: " + pendingTests[0].date.toString() + "\n";
+
+				//print expected relay info
+				message += "- Relays Expected On: \n";
+				for (var i = 0; i < 4; i++) {
+					//create mask
+					let mask = 1 << i;
+
+					//check mask
+					message += "Relay " + i;
+					if (pendingTests[0].relayOn & mask) {
+						message += ": on\n";
+					} else {
+						message += ": off\n";
+					}
+				}
+
+				//print real relay info
+				message += "- Relay Results: \n";
+				for (var i = 0; i < 4; i++) {
+					//create mask
+					let mask = 1 << i;
+
+					//check mask
+					message += "Relay " + i;
+					if (testResults[0].relayOn & mask) {
+						message += ": on\n";
+					} else {
+						message += ": off\n";
+					}
+				}
+
+				writeToErrorLog(message, false);
+			}
+
+			//remove results
+			pendingTests.shift();
+			testResults.shift();
+
+			//send the next test
+			if (pendingTests.length > 0) {
+				sendTest();
+			} else {
+				writeToErrorLog("All tests complete", false);
+			}
+		} else if (pendingTests.length == 1 && pendingTests[0].pending == false) {
+			//new test has been added
+			//start processing the chain
+			sendTest();
+		}
+	}
+
+	function sendTest() {
+		//sends the first test in the pending tests buffer
+		sendSingleTest(pendingTests[0]);
+		pendingTests[0].pending = true;
+	}
+
+}
+let testHandler = new TestBrain();
+
+
+//displays the gps time reported by the gps
+function updateGPSTime(gpsHour, gpsMin) {
+	if (gpsHour != -1) {
+		document.getElementById("gpsTimeDisplay").textContent = String(gpsHour).padStart(2, "0") + ":" + String(gpsMin).padStart(2, "0");
+	} else {
+		document.getElementById("gpsTimeDisplay").textContent = "Not connected to satellites yet";
+	}
+}
+
+//sets the relay button colors in the test menu
+//e.g. displayTestResult(true, false, true, false);
+function displayTestResult(testResults) {
+	//validate args
+	if (!testResults instanceof TestResults) {
+		return;
+	} else {
+		//display pivot status
+		let pivotStatusDisplay = document.getElementById("testPivotOnDisplay");
+		if (testResults.pivotOn == -1) {
+			pivotStatusDisplay.textContent = "Pivot On";
+			pivotStatusDisplay.classList.remove("valid");
+			pivotStatusDisplay.classList.remove("invalid");
+		} else if (testResults.pivotOn == true) {
+			pivotStatusDisplay.textContent = "Pivot On";
+			pivotStatusDisplay.classList.add("valid");
+			pivotStatusDisplay.classList.remove("invalid");
+
+		} else {
+			pivotStatusDisplay.textContent = "Pivot Off";
+			pivotStatusDisplay.classList.add("invalid");
+			pivotStatusDisplay.classList.remove("valid");
+		}
+
+
+		//display relay statuses
+		let relayContainer = document.getElementById("testRelayDisplayContainer");
+
+		for (var i = 0; i < 4; i++) {
+			if (testResults.relayOn == -1) {
+				//reset to default
+				relayContainer.children[i].classList.remove("valid");
+				relayContainer.children[i].classList.remove("invalid");
+			} else {
+				//set values
+				//create mask
+				let mask = 1 << i;
+
+				//check mask
+				if (testResults.relayOn & mask) {
+					//valid
+					relayContainer.children[i].classList.add("valid");
+					relayContainer.children[i].classList.remove("invalid");
+				} else {
+					//invalid
+					relayContainer.children[i].classList.add("invalid");
+					relayContainer.children[i].classList.remove("valid");
+				}
+			}
+		}
+	}
+}
+
+function toggleTestingModeClick() {
+	//notify the arduino
+	toggleTestMode(!testingMode);
+}
+
+//tests all current settings against saved times
+function verifySettings() {
+
+}
+
+function testSingleTimeClick() {
+	//remove any previous test results
+	let clearTest = new TestResults();
+	clearTest.pivotOn = -1;
+	clearTest.relayOn = -1;
+	displayTestResult(clearTest);
+
+	//create new test
+	var newTest = new TimeTestStruct();
+	newTest.procedureMin = parseInt(document.getElementById("testProcedureMinInput").value);
+	newTest.date = new Date(document.getElementById("testSingleTimeInput").value);
+
+	//validate parameters
+	if(isNaN(newTest.procedureMin) || isNaN(newTest.date)){
+		return;
+	}
+
+	testHandler.addTest(newTest);
+}</script>
+	<script>"use strict";
+
+//all the user interface code for settings the holiday slots
+let selectedHolidaySlot = 0;
+let holidaySlotInputBox = document.getElementById("holidaySlotInput");
+function refreshHolidayUI() {
+	let container = document.getElementById("holidayCloneContainer");
+
+	//display max holidays
+	document.getElementById("displayMaxHolidays").textContent = maxHolidays;
+
+	//update visual count
+	let pageIndex;
+	if (loadedData.holidayInfo.usedHolidaySlots == 0) {
+		pageIndex = 0;
+	} else {
+		pageIndex = selectedHolidaySlot + 1;
+	}
+	document.getElementById("holidaySlotCountInfo").textContent = pageIndex + " of " + loadedData.holidayInfo.usedHolidaySlots;
+
+	if (loadedData.holidayInfo.usedHolidaySlots == 0) {
+		//hide holidays since there are no slots
+		document.getElementById("individualHolidayContainer").style.display = "none";
+
+		//set input box 
+		holidaySlotInputBox.value = 0;
+	} else {
+		// display the selected holiday slot
+
+		//get reference to the data
+		let selectedData = loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot];
+
+		//unhide the container
+		document.getElementById("individualHolidayContainer").style.display = "block";
+
+		//display slot index input box value
+		holidaySlotInputBox.value = selectedHolidaySlot + 1;
+
+		//display start & end time
+		document.getElementById("holidayStartTimeInput").value = String(selectedData.beginHour).padStart(2, "0") + ":" + String(selectedData.beginMin).padStart(2, "0");
+		document.getElementById("holidayEndTimeInput").value = String(selectedData.endHour).padStart(2, "0") + ":" + String(selectedData.endMin).padStart(2, "0");
+
+		//display relay statuses
+		let pivotOnButton = document.getElementById("holidayPivotOnButton");
+
+		//apply value
+		if (selectedData.pivotOn) {
+			pivotOnButton.classList.add("valid");
+			pivotOnButton.classList.remove("invalid");
+		} else {
+			pivotOnButton.classList.add("invalid");
+			pivotOnButton.classList.remove("valid");
+		}
+
+		//display holiday type
+		let specficDateContainer = document.getElementById("holidaySpecificDateContainer");
+		let weekOfMonthContainer = document.getElementById("holidayWeekOfMonthContainer");
+		if (selectedData.holidayWeekRestrict == 0) {
+			//specific date
+
+			//set form selected value
+			document.getElementById("holidayTypeSelect1").checked = true;
+
+			//hide/show menus
+			specficDateContainer.style.display = "block";
+			weekOfMonthContainer.style.display = "none";
+
+			//set the selected date
+			let monthString = String((selectedData.holidayMonthRestrict + 1)).padStart(2, "0");
+			let dayString = String((selectedData.dayRestrict + 1)).padStart(2, "0");
+			document.getElementById("holidaySpecificDateInput").value = new Date().getFullYear() + "-" + (monthString) + "-" + (dayString);
+		} else {
+			//week of the month
+
+			//set form selected value
+			document.getElementById("holidayTypeSelect2").checked = true;
+
+			//hide/show menus
+			specficDateContainer.style.display = "none";
+			weekOfMonthContainer.style.display = "block";
+
+			//set drop downs
+			document.getElementById("holidayWeekNumInput").value = selectedData.holidayWeekRestrict;
+			document.getElementById("holidayWeekDayInput").value = selectedData.holidayweekDayRestrict;
+			document.getElementById("holidayMonthInput").value = selectedData.holidayMonthRestrict;
+		}
+	}
+}
+
+//called when number inside input box is changed
+function holidaySlotChange() {
+	let inputBox = document.getElementById("holidaySlotInput");
+	let newValue = parseInt(inputBox.value);
+
+	if (isNaN(newValue) || (newValue - 1) < 0 || (newValue - 1) > loadedData.holidayInfo.usedHolidaySlots) {
+		//invalid slot index
+
+		//revert value
+		inputBox.value = selectedHolidaySlot + 1;
+	} else {
+		//save the new value
+		selectedHolidaySlot = newValue - 1;
+	}
+}
+
+//called when buttons are clicked
+function changeHolidaySlotClick(changeAmount) {
+	//apply change
+	selectedHolidaySlot += changeAmount;
+
+	//wrap value if it went too far
+	if (selectedHolidaySlot < 0) {
+		selectedHolidaySlot += loadedData.holidayInfo.usedHolidaySlots;
+	} else if (selectedHolidaySlot >= loadedData.holidayInfo.usedHolidaySlots) {
+		selectedHolidaySlot -= loadedData.holidayInfo.usedHolidaySlots;
+	}
+
+	//trim execess values
+	if (selectedHolidaySlot < 0) {
+		selectedHolidaySlot = 0;
+	} else if (selectedHolidaySlot > loadedData.holidayInfo.usedHolidaySlots) {
+		selectedHolidaySlot = Math.max(loadedData.holidayInfo.usedHolidaySlots - 1, 0);
+	}
+
+	//refresh ui
+	refreshUI();
+}
+
+function addHolidaySlotClick() {
+	//add to memory
+	loadedData.holidayInfo.addHoliday();
+
+	//update selected holiday to the new holiday
+	selectedHolidaySlot = loadedData.holidayInfo.usedHolidaySlots - 1;
+
+	refreshUI();
+}
+
+function removeHolidaySlotClick() {
+	loadedData.holidayInfo.removeHoliday(selectedHolidaySlot);
+
+	//set to a valid holiday slot
+	selectedHolidaySlot = 0;
+
+	refreshUI();
+}
+
+function HolidayTypeSelectChange() {
+	var selectedType = new FormData(document.getElementById("holidayTypeForm")).get("typeSelect");
+
+	if (selectedType == 0) {
+		//specific date
+		loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].holidayWeekRestrict = 0;
+	} else if (selectedType == 1) {
+		//week of the month
+		loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].holidayWeekRestrict = 1;
+	}
+
+	//refresh ui
+	refreshUI();
+}
+
+function holidayStartTimeChange() {
+	let time = document.getElementById("holidayStartTimeInput").value.split(":");
+
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].beginHour = parseInt(time[0]);
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].beginMin = parseInt(time[1]);
+
+	//refresh ui
+	refreshUI();
+}
+
+function holidayEndTimeChange() {
+	let time = document.getElementById("holidayEndTimeInput").value.split(":");
+
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].endHour = parseInt(time[0]);
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].endMin = parseInt(time[1]);
+
+	//refresh ui
+	refreshUI();
+}
+
+function holidayRelayToggle() {
+	//get saved value
+	let savedRelay = loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].pivotOn;
+
+	//invert
+	savedRelay = !savedRelay;
+
+	//save it back
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].pivotOn = savedRelay;
+
+	//refresh ui
+	refreshUI();
+}
+
+function holidaySpecificDayChange() {
+	let value = document.getElementById("holidaySpecificDateInput").value.split("-");
+
+	//set month
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].holidayMonthRestrict = value[1] - 1;
+
+	//set day
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].dayRestrict = value[2] - 1;
+}
+
+function holidayWeekNumChange() {
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].holidayWeekRestrict = parseInt(document.getElementById("holidayWeekNumInput").value);
+}
+
+function holidayWeekDayChange() {
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].holidayweekDayRestrict = parseInt(document.getElementById("holidayWeekDayInput").value);
+}
+
+function holidayMonthDropdownChange() {
+	loadedData.holidayInfo.holidayTimeSlots[selectedHolidaySlot].holidayMonthRestrict = parseInt(document.getElementById("holidayMonthInput").value);
+}</script>
+	<script>"use strict";
+
+//all the user interface code for setting the time slots
+
+//global values
+const weekDayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+let selectedWeekDay = document.getElementById("weekDaySelect");
+let selectedCopyDay = -1;
+const minutesInADay = 1440;
+const defaultTimeCut = new TimeCut(0, 0);
+const endOfDayTimeCut = new TimeCut(24, 0);
+
+function refreshTimeSlotUI() {
+
+	//set title
+	document.getElementById("weekDayTitle").innerHTML = weekDayNames[selectedWeekDay.value];
+
+	//display max cuts in one day
+	document.getElementById("displayMaxDayCuts").textContent = maxCutsPerDay;
+
+	//setup relay controls
+	let pivotOnContainer = document.getElementById("pivotOnContainer");
+
+	//create timeline buttons
+	//clear old elements
+	pivotOnContainer.textContent = '';
+
+	//create row for buttons
+	let buttonRow = document.createElement("tr");
+
+	//create rows for time lines
+	let timeLineRow = document.createElement("tr");
+
+	//check if this day has any cuts
+	if (loadedData.weekDayInfo[selectedWeekDay.value].usedCuts < 1) {
+		//add default button
+		buttonRow.appendChild(createTimeSlotButton(defaultTimeCut, endOfDayTimeCut, false, () => { defaultSlotButtonClicked() }));
+
+		timeLineRow.appendChild(createTimeLine(defaultTimeCut, endOfDayTimeCut));
+	} else {
+		//add default button
+		buttonRow.appendChild(createTimeSlotButton(defaultTimeCut, loadedData.weekDayInfo[selectedWeekDay.value].cutList[0], false, () => { defaultSlotButtonClicked() }));
+
+		//add timeline for default button
+		timeLineRow.appendChild(createTimeLine(defaultTimeCut, loadedData.weekDayInfo[selectedWeekDay.value].cutList[0]));
+
+		//loop through each cut
+		for (let i = 0; i < loadedData.weekDayInfo[selectedWeekDay.value].usedCuts; i++) {
+			//get info
+			let curentCut = loadedData.weekDayInfo[selectedWeekDay.value].cutList[i];
+
+			//check for last button in each container
+			var nextCut;
+			if (i == loadedData.weekDayInfo[selectedWeekDay.value].usedCuts - 1) {
+				nextCut = endOfDayTimeCut;
+			} else {
+				nextCut = loadedData.weekDayInfo[selectedWeekDay.value].cutList[i + 1];
+			}
+
+			//calculate if this button should be on
+			let isOn = loadedData.weekDayInfo[selectedWeekDay.value].cutList[i].pivotOn;
+
+			//create new button
+			let newRelayButton = createTimeSlotButton(curentCut, nextCut, isOn, () => slotButtonClicked(i));
+
+			//add button
+			buttonRow.appendChild(newRelayButton);
+
+			//create matching timeline
+			timeLineRow.appendChild(createTimeLine(curentCut, nextCut));
+		}
+	}
+
+	//add button row to the table
+	pivotOnContainer.appendChild(buttonRow);
+
+	//add timeline row to the table
+	pivotOnContainer.appendChild(timeLineRow);
+
+	//populate remove cut dropdown
+
+	//get dropdown
+	let removeDropDown = document.getElementById("removeCutSelect");
+
+	//remove old options
+	removeDropDown.textContent = '';
+
+	//create new options
+	for (let i = 0; i < loadedData.weekDayInfo[selectedWeekDay.value].usedCuts; i++) {
+		//create option
+		var option = document.createElement("option");
+
+		//get the current timeCut
+		let cut = loadedData.weekDayInfo[selectedWeekDay.value].cutList[i];
+
+		//set dropdown value
+		option.value = i;
+
+		//set text
+		option.text = String(cut.hour).padStart(2, "0") + ":" + String(cut.min).padStart(2, "0");
+
+		//add option to dropdown
+		removeDropDown.add(option);
+	}
+}
+
+
+//called when a relay slot button is clicked
+function slotButtonClicked(index) {
+	//get saved value
+	let savedPivotOn = loadedData.weekDayInfo[selectedWeekDay.value].cutList[index].pivotOn;
+
+	//invert value
+	savedPivotOn = (savedPivotOn != true);
+
+	//save it back
+	loadedData.weekDayInfo[selectedWeekDay.value].cutList[index].pivotOn = savedPivotOn;
+
+	//refresh ui
+	refreshUI();
+}
+
+//called when a default relay slot button (not tied to a specific slot) is clicked
+function defaultSlotButtonClicked() {
+	//create mask
+	let relayMask = 1 << 0;
+
+	//add the new cut
+	loadedData.weekDayInfo[selectedWeekDay.value].addTimeCut(0, 0, relayMask);
+
+	//refresh ui
+	refreshUI();
+}
+
+function addTimeCutClick() {
+	let newTime = document.getElementById("addCutInput").value.split(":");
+	let hour = parseInt(newTime[0]);
+	let min = parseInt(newTime[1]);
+
+	if (isNaN(hour) || isNaN(min)) {
+		//unable to parse time
+		return;
+	}
+
+	//add the new cut
+	loadedData.weekDayInfo[selectedWeekDay.value].addTimeCut(hour, min);
+
+	//clear input
+	document.getElementById("addCutInput").value = '';
+
+	//refresh ui
+	refreshUI();
+}
+
+function removeTimeCutClick() {
+	//get the dropdown
+	let selected = parseInt(document.getElementById("removeCutSelect").value);
+
+	if (isNaN(selected)) {
+		//unable to parse dropdown
+		return;
+	}
+
+	//remove the cut
+	loadedData.weekDayInfo[selectedWeekDay.value].removeTimeCut(selected);
+
+	//refresh ui
+	refreshUI();
+}
+
+function copyDayClick() {
+	//save copy day
+	selectedCopyDay = parseInt(selectedWeekDay.value);
+
+	//enable paste button
+	document.getElementById("pasteDayBtn").disabled = false;
+
+	//update displayed info
+	document.getElementById("selectedDayOutput").textContent = weekDayNames[selectedCopyDay];
+}
+
+function pasteDayClick() {
+	if (selectedCopyDay >= 0) {
+		//paste the day
+		loadedData.weekDayInfo[selectedWeekDay.value] = loadedData.weekDayInfo[selectedCopyDay];
+
+		//refresh ui
+		refreshUI();
+	}
+}</script>
+	<script>"use strict";
+
+function refreshProcedureUi() {
+	//display max cuts in one day
+	let elements = document.getElementsByClassName("maxProcedureCuts");
+	for (var i = 0; i < elements.length; i++) {
+		elements[i].textContent = maxProcedureCuts;
+	}
+
+	refreshStartProcedureUI();
+
+	refreshStopProcedureUI();
+}
+
+function refreshStartProcedureUI() {
+	//setup relay controls
+	let startRelayContainers = document.getElementById("startRelayContainers");
+	let startRelayTables = [];
+
+	//get all the relay tables
+	for (var i = 0; i < 4; i++) {
+		startRelayTables.push(startRelayContainers.children[i]);
+	}
+
+	//loop through all relays
+	for (let i = 0; i < 4; i++) {
+
+		//create timeline buttons
+		//clear old elements
+		startRelayTables[i].textContent = '';
+
+		//create row for buttons
+		let buttonRow = document.createElement("tr");
+
+		//create rows for time lines
+		let timeLineRow = document.createElement("tr");
+
+		//check if this day has any cuts
+		if (loadedData.startProcedure.usedCuts < 1) {
+			//add default button
+			buttonRow.appendChild(createTimeSlotButton(defaultTimeCut, endOfDayTimeCut, false, () => { defaultProcedureButtonClicked(0, i) }));
+
+			timeLineRow.appendChild(createTimeLine(defaultTimeCut, endOfDayTimeCut));
+		} else {
+			//add default button
+			buttonRow.appendChild(createTimeSlotButton(defaultTimeCut, loadedData.startProcedure.cutList[0], false, () => { defaultProcedureButtonClicked(0, i) }));
+
+			//add timeline for default button
+			timeLineRow.appendChild(createTimeLine(defaultTimeCut, loadedData.startProcedure.cutList[0]));
+
+			//loop through each cut
+			for (let j = 0; j < loadedData.startProcedure.usedCuts; j++) {
+				//get info
+				let curentCut = loadedData.startProcedure.cutList[j];
+
+				//check for last button in each container
+				var nextCut;
+				if (j == loadedData.startProcedure.usedCuts - 1) {
+					nextCut = endOfDayTimeCut;
+				} else {
+					nextCut = loadedData.startProcedure.cutList[j + 1];
+				}
+
+				//calculate if this button should be on
+				let isOn = loadedData.startProcedure.cutList[j].getRelayOn(i);
+
+				//create new button
+				let newRelayButton = createTimeSlotButton(curentCut, nextCut, isOn, () => procedureButtonClicked(0, j, i));
+
+				//add button
+				buttonRow.appendChild(newRelayButton);
+
+				//create matching timeline
+				timeLineRow.appendChild(createTimeLine(curentCut, nextCut));
+			}
+		}
+
+		//add button row to the table
+		startRelayTables[i].appendChild(buttonRow);
+
+		//add timeline row to the table
+		startRelayTables[i].appendChild(timeLineRow);
+	}
+
+	//populate remove cut dropdown
+	//get dropdown
+	let removeDropDown = document.getElementById("removeStartCutSelect");
+
+	//remove old options
+	removeDropDown.textContent = '';
+
+	//create new options
+	for (let i = 0; i < loadedData.startProcedure.usedCuts; i++) {
+		//create option
+		var option = document.createElement("option");
+
+		//get the current timeCut
+		let cut = loadedData.startProcedure.cutList[i];
+
+		//set dropdown value
+		option.value = i;
+
+		//set text
+		option.text = String(cut.min).padStart(2, 0);
+
+		//add option to dropdown
+		removeDropDown.add(option);
+	}
+}
+
+function refreshStopProcedureUI() {
+	//setup relay controls
+	let stopRelayContainers = document.getElementById("stopRelayContainers");
+	let stopRelayTables = [];
+
+	//get all the relay tables
+	for (var i = 0; i < 4; i++) {
+		stopRelayTables.push(stopRelayContainers.children[i]);
+	}
+
+	//loop through all relays
+	for (let i = 0; i < 4; i++) {
+
+		//create timeline buttons
+		//clear old elements
+		stopRelayTables[i].textContent = '';
+
+		//create row for buttons
+		let buttonRow = document.createElement("tr");
+
+		//create rows for time lines
+		let timeLineRow = document.createElement("tr");
+
+		//check if this day has any cuts
+		if (loadedData.stopProcedure.usedCuts < 1) {
+			//add default button
+			buttonRow.appendChild(createTimeSlotButton(defaultTimeCut, endOfDayTimeCut, false, () => { defaultProcedureButtonClicked(1, i) }));
+
+			timeLineRow.appendChild(createTimeLine(defaultTimeCut, endOfDayTimeCut));
+		} else {
+			//add default button
+			buttonRow.appendChild(createTimeSlotButton(defaultTimeCut, loadedData.stopProcedure.cutList[0], false, () => { defaultProcedureButtonClicked(1, i) }));
+
+			//add timeline for default button
+			timeLineRow.appendChild(createTimeLine(defaultTimeCut, loadedData.stopProcedure.cutList[0]));
+
+			//loop through each cut
+			for (let j = 0; j < loadedData.stopProcedure.usedCuts; j++) {
+				//get info
+				let curentCut = loadedData.stopProcedure.cutList[j];
+
+				//check for last button in each container
+				var nextCut;
+				if (j == loadedData.stopProcedure.usedCuts - 1) {
+					nextCut = endOfDayTimeCut;
+				} else {
+					nextCut = loadedData.stopProcedure.cutList[j + 1];
+				}
+
+				//calculate if this button should be on
+				let isOn = loadedData.stopProcedure.cutList[j].getRelayOn(i);
+
+				//create new button
+				let newRelayButton = createTimeSlotButton(curentCut, nextCut, isOn, () => procedureButtonClicked(1, j, i));
+
+				//add button
+				buttonRow.appendChild(newRelayButton);
+
+				//create matching timeline
+				timeLineRow.appendChild(createTimeLine(curentCut, nextCut));
+			}
+		}
+
+		//add button row to the table
+		stopRelayTables[i].appendChild(buttonRow);
+
+		//add timeline row to the table
+		stopRelayTables[i].appendChild(timeLineRow);
+	}
+
+	//populate remove cut dropdown
+	//get dropdown
+	let removeDropDown = document.getElementById("removeStopCutSelect");
+
+	//remove old options
+	removeDropDown.textContent = '';
+
+	//create new options
+	for (let i = 0; i < loadedData.stopProcedure.usedCuts; i++) {
+		//create option
+		var option = document.createElement("option");
+
+		//get the current timeCut
+		let cut = loadedData.stopProcedure.cutList[i];
+
+		//set dropdown value
+		option.value = i;
+
+		//set text
+		option.text = String(cut.min).padStart(2, 0);
+
+		//add option to dropdown
+		removeDropDown.add(option);
+	}
+}
+
+//called when a relay slot button is clicked
+function procedureButtonClicked(procedureIndex, cutIndex, relayIndex) {
+	//get saved value
+	let savedPivotOn
+	if (procedureIndex == 0) {
+		savedPivotOn = loadedData.startProcedure.cutList[cutIndex].relayOn;
+	} else if (procedureIndex == 1) {
+		savedPivotOn = loadedData.stopProcedure.cutList[cutIndex].relayOn;
+	}
+
+	//create mask
+	let mask = createBitMask(1, relayIndex);
+
+	//invert value
+	savedPivotOn ^= mask;
+
+	//save it back
+	if (procedureIndex == 0) {
+		loadedData.startProcedure.cutList[cutIndex].relayOn = savedPivotOn;
+	} else if (procedureIndex == 1) {
+		loadedData.stopProcedure.cutList[cutIndex].relayOn = savedPivotOn;
+	}
+
+	//refresh ui
+	refreshUI();
+}
+
+function defaultProcedureButtonClicked(procedureIndex, relayIndex) {
+	//create mask
+	let relayMask = createBitMask(1, relayIndex);
+
+	//add the new cut
+	if (procedureIndex == 0) {
+		//start procedure
+		loadedData.startProcedure.addProcedureCut(0, relayMask);
+	} else if (procedureIndex == 1) {
+		//stop procedure
+		loadedData.stopProcedure.addProcedureCut(0, relayMask);
+	}
+
+	//refresh ui
+	refreshUI();
+}
+
+
+function addProcedureCutClick(procedureIndex) {
+	let newTime;
+	if (procedureIndex == 0) {
+		newTime = document.getElementById("addStartCutInput").value;
+	} else if (procedureIndex == 1) {
+		newTime = document.getElementById("addStopCutInput").value;
+	}
+	let min = parseInt(newTime);
+
+	if (isNaN(min)) {
+		//unable to parse time
+		console.log("miuntes is nan");
+		return;
+	}
+
+	if (procedureIndex == 0) {
+		//add the new cut
+		loadedData.startProcedure.addProcedureCut(min, 0);
+
+		//clear input
+		document.getElementById("addStartCutInput").value = '';
+	} else if (procedureIndex == 1) {
+		//add the new cut
+		loadedData.stopProcedure.addProcedureCut(min, 0);
+
+		//clear input
+		document.getElementById("addStopCutInput").value = '';
+	}
+
+	//refresh ui
+	refreshUI();
+}
+
+function removeProcedureCutClick(procedureIndex) {
+	let selected;
+
+	//get the dropdown
+	if (procedureIndex == 0) {
+		selected = parseInt(document.getElementById("removeStartCutSelect").value);
+	} else if (procedureIndex == 1) {
+		selected = parseInt(document.getElementById("removeStopCutSelect").value);
+	}
+
+	if (isNaN(selected)) {
+		//unable to parse dropdown
+		return;
+	}
+
+	//remove the cut
+	if (procedureIndex == 0) {
+		loadedData.startProcedure.removeProcedureCut(selected);
+	} else if (procedureIndex == 1) {
+		loadedData.stopProcedure.removeProcedureCut(selected);
+	}
+
+	//refresh ui
+	refreshUI();
+}</script>
+	<script>"use strict";
+
+//used to delay initialization function calls till all functions have been declared
+
+//tags collapsible menus so that they can function
+setupCollapsibleMenus();
+
+//fills in input box with the value from the dropdown
+setBaudRate();
+
+//refreshes and loads ui elements correctly
+refreshUI();
+
+//displays if the arduino is connected and if it is in testing mode
+updateConnectionStatus();
+
+//displays whether data is being transfered between website and arduino
+updateSendingStatus();</script>
+
+</body>
+
+</html>

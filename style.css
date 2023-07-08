@@ -1,0 +1,201 @@
+/* For version number */
+#versionNumber{
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	z-index: 1;
+}
+
+/* hides an element */
+.hidden {
+	display: none;
+}
+
+.unfinished{
+	display: none;
+}
+
+/* Adds dashed box around element */
+.dashedbox {
+	border-style: dashed;
+	padding: 10px;
+}
+
+/* For collapsible sections */
+.collapsible {
+	cursor: pointer;
+
+	background-color: #eee;
+	color: #444;
+
+	padding: 18px;
+	width: 100%;
+	border: none;
+	text-align: left;
+	outline: none;
+	font-size: 15px;
+}
+
+.collapsible:hover {
+	background-color: #ccc;
+}
+
+.collapsibleContent {
+	max-height: 0;
+	/* overflow: hidden; */
+	overflow-y: hidden;
+	overflow-x: visible;
+	transition: max-height 0.2s ease-out;
+}
+
+.flexContainer {
+	display: flex;
+	align-items: stretch;
+}
+
+.listWidth {
+	width: 50%;
+}
+
+/*Used to show that object is valid*/
+.valid {
+
+	color: white;
+	background-color: green;
+}
+
+/*Used to show that object is not valid*/
+.invalid {
+
+	color: white;
+	background-color: red;
+}
+
+/* Used to show that something is currently testing */
+.testing{
+	color: white;
+	background-color: blue;
+}
+
+#globalInfo {
+	text-align: center;
+	position: fixed;
+	left: 50%;
+	right: 0%;
+
+
+	background-color: #eee;
+	color: #444;
+
+	padding: 18px;
+}
+
+#connectionStatus {
+	padding: 10px;
+}
+
+#dataStatus{
+	padding: 10px;
+}
+
+#sendingStatus{
+	padding: 10px;
+}
+
+#errorLog {
+	position: relative;
+	background-color: rgb(210, 210, 210);
+	overflow: auto;
+	border-style: solid;
+	height: 300px;
+
+	z-index: 1;
+}
+
+
+
+/* For Serial */
+#baudRateField {
+	width: 80px;
+}
+
+/* For week day picker */
+#weekDaySelect {
+	position: relative;
+	width: 100%;
+	height: 44px;
+	border-radius: 100px;
+	outline: none;
+}
+
+#weekDaySelect option {
+	width: 14%;
+	font-size: 1.2em;
+	padding: 10px 0;
+	text-align: center;
+	display: inline-block;
+	cursor: pointer;
+	border: rgb(82, 204, 0) solid 1px;
+	border-radius: 5px;
+	color: rgb(82, 204, 0);
+}
+
+#weekDaySelect option:checked {
+	background-color: blue;
+}
+
+/* For editing a week day */
+
+.relayTable {
+	position: relative;
+	width: 100%;
+	border-collapse: collapse;
+}
+
+
+/* For editing holidays */
+.holidayRelayButton{
+	padding: 0px;
+	width: 24%;
+	height: 30px;
+	cursor: pointer;
+	border: solid;
+	border-color: black;
+	/* border-width: 1px; */
+	
+	/* newRelayButton.style.padding = "0";
+		newRelayButton.style.border = "solid";
+		newRelayButton.style.cursor = "pointer";
+		newRelayButton.style.height = "30px";
+		newRelayButton.style.borderColor = "black";
+		newRelayButton.style.borderWidth = "1px"; */
+}
+
+
+/* For displaying an arrow */
+.arrow {
+	border: solid black;
+	border-width: 0 3px 3px 0;
+	display: inline-block;
+	padding: 3px;
+}
+
+.right {
+	transform: rotate(-45deg);
+	-webkit-transform: rotate(-45deg);
+}
+
+.left {
+	transform: rotate(135deg);
+	-webkit-transform: rotate(135deg);
+}
+
+.up {
+	transform: rotate(-135deg);
+	-webkit-transform: rotate(-135deg);
+}
+
+.down {
+	transform: rotate(45deg);
+	-webkit-transform: rotate(45deg);
+}
