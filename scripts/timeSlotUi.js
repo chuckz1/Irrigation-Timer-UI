@@ -182,7 +182,21 @@ function copyDayClick() {
 function pasteDayClick() {
 	if (selectedCopyDay >= 0) {
 		//paste the day
-		loadedData.weekDayInfo[selectedWeekDay.value] = loadedData.weekDayInfo[selectedCopyDay];
+
+		//copy used cuts
+		loadedData.weekDayInfo[selectedWeekDay.value].usedCuts = loadedData.weekDayInfo[selectedCopyDay].usedCuts;
+
+		let cutListRef = loadedData.weekDayInfo[selectedCopyDay].cutList;
+
+		//deep copy arrays
+		let newCutList = [];
+		for (var i = 0; i < cutListRef.length; i++) {
+			//cast values so that getter and setters are preserved
+			newCutList.push(new TimeCut(cutListRef[i].hour, cutListRef[i].min, cutListRef[i].pivotOn));
+		}
+
+		//apply copied array
+		loadedData.weekDayInfo[selectedWeekDay.value].cutList = newCutList;
 
 		//refresh ui
 		refreshUI();
